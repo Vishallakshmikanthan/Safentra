@@ -240,7 +240,6 @@ export function connectPlantFeed(): () => void {
               : event.severity === 'high' ? 'warning' as const
               : 'info' as const,
           };
-          };
           store.getState().addAlert(alert);
         }
 
