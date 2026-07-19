@@ -711,7 +711,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 <div align="center">
 
-**Built with ❤️ for ET AI Hackathon 2.0 — Round 2**
+**Built with ❤️ by VibeSync for ET AI Hackathon 2.0 — Round 2**
 
 *From compound risk detection to compound impact prevention.*
 
