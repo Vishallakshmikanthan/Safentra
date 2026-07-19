@@ -67,14 +67,6 @@ export const CommandCentre: React.FC = () => {
 
         {/* Center: ATLAS Heatmap */}
         <div className="flex-1 flex flex-col border-r border-primary bg-background relative overflow-hidden">
-          <div className="p-2 border-b border-primary flex justify-between items-center bg-surface shrink-0 z-10">
-            <span className="font-label-caps text-label-caps uppercase tracking-widest text-primary">ATLAS Sector Map</span>
-            <div className="flex gap-4">
-              <span className="flex items-center gap-1 font-label-caps text-[10px]"><div className="w-3 h-3 bg-error border border-primary"></div> Critical</span>
-              <span className="flex items-center gap-1 font-label-caps text-[10px]"><div className="w-3 h-3 bg-secondary-container border border-primary"></div> Warning</span>
-              <span className="flex items-center gap-1 font-label-caps text-[10px]"><div className="w-3 h-3 border border-primary"></div> Nominal</span>
-            </div>
-          </div>
           <AtlasSectorMap />
         </div>
 

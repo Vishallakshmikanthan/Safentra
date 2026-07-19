@@ -109,10 +109,66 @@ export const usePlantStore = create<PlantState>((set) => ({
   simulationMode: 'normal',
   dangerElapsedSeconds: 0,
 
-  oracleState: { isActive: false, recommendations: [], regulations: [], historicalIncidents: [], explanation: '', affectedSensors: [], affectedPermits: [], workersAtRisk: [], confidence: 0, sources: [], conversationHistory: [] },
-  forgeState: { candidates: [], approvalHistory: [], rejectionHistory: [] },
-  blazeState: { isActive: false, incidentTimeline: [], evacuationStatus: 'none', emergencyContactsNotified: [], affectedWorkers: [], assemblyPoints: [], incidentReport: null, actionChecklist: [], resourceAllocation: [], responseStatus: 'STANDBY', countdownTimer: null },
-  chaosState: { activeInjections: [], history: [] },
+  oracleState: { 
+    isActive: true, 
+    recommendations: ['Secondary gas test is mandatory before resumption of hot work.', 'Ventilation systems should be switched to negative pressure mode.', 'Evacuate Zone C4 immediately.'], 
+    regulations: ['OISD-GDN-169', 'PTW-2023-1142'], 
+    historicalIncidents: ['Minor H2S spikes at Sensor Node 4A correlated with venting operations.'], 
+    explanation: 'Analysis indicates three minor H2S spikes (peaking at 12ppm) at Sensor Node 4A over the past 48 hours. These readings correlate temporally with venting operations conducted by Maintenance Crew Alpha. There is currently one active Hot Work permit (PTW-2023-1142) issued within a 50-meter radius for pipe section replacement.', 
+    affectedSensors: ['NODE-4A', 'S-C4-GAS'], 
+    affectedPermits: ['PTW-2023-1142'], 
+    workersAtRisk: ['worker-3 (Amit Singh)'], 
+    confidence: 0.94, 
+    sources: ['NODE-4A-LOG', 'PTW-2023-1142', 'OISD-GDN-169'], 
+    conversationHistory: [] 
+  },
+  forgeState: { 
+    candidates: [{
+      id: 'FC-01',
+      pattern: {
+        id: 'P-NEW',
+        name: 'Confined Space + High Temp + Work Permit',
+        description: 'Worker in confined space with rising ambient temperature and active hot work permit nearby.',
+        severity: 'high',
+        conditions: ['Zone type is confined_space', 'Temperature trend is rising > 2deg/min', 'Adjacent zone has active hot_work permit'],
+        lastSeen: new Date().toISOString()
+      },
+      suggestedPatternId: 'RULE-045',
+      confidence: 0.88
+    }], 
+    approvalHistory: [], 
+    rejectionHistory: [] 
+  },
+  blazeState: { 
+    isActive: true, 
+    incidentTimeline: [
+      { timestamp: new Date(Date.now() - 120000).toISOString(), message: 'BEGIN TRANSMISSION' },
+      { timestamp: new Date(Date.now() - 110000).toISOString(), message: 'ERR: THERMAL RUNAWAY DETECTED. Sensor array #402 offline. Last recorded temp: 450°C. Rate of climb exceeds safety thresholds.' },
+      { timestamp: new Date(Date.now() - 100000).toISOString(), message: 'SYS.INIT(BLAZE_PROTOCOL)' },
+      { timestamp: new Date(Date.now() - 90000).toISOString(), message: 'Containment doors closing... FAILED. Obstruction reported in Corridor B.' },
+      { timestamp: new Date(Date.now() - 80000).toISOString(), message: 'Ventilation systems switching to negative pressure mode... OK.' },
+      { timestamp: new Date(Date.now() - 70000).toISOString(), message: 'END OF LOG APPEND. AWAITING MANUAL OVERRIDE.' }
+    ], 
+    evacuationStatus: 'in_progress', 
+    emergencyContactsNotified: ['Facility Director', 'Local Fire Dept HQ'], 
+    affectedWorkers: ['worker-3', 'worker-4'], 
+    assemblyPoints: ['Assembly Point Alpha'], 
+    incidentReport: null, 
+    actionChecklist: ['Immediate Total Evacuation - Zone Alpha', 'Secure & Standby - Zone Beta', 'Lockdown Authorized Personnel Only - Perimeter Gates'], 
+    resourceAllocation: [], 
+    responseStatus: 'ACTIVE', 
+    countdownTimer: '00:00' 
+  },
+  chaosState: { 
+    activeInjections: [{
+      id: 'INJ-01',
+      type: 'sensor_failure',
+      target: 'S-C1-TMP',
+      startTime: new Date().toISOString(),
+      status: 'active'
+    }], 
+    history: [] 
+  },
 
   setCurrentView: (view) => set({ currentView: view }),
 
@@ -278,11 +334,36 @@ export function connectPlantFeed(): () => void {
     };
   };
 
+  let mockAlertInterval: number | undefined;
+
+  const startMockAlerts = () => {
+    if (mockAlertInterval) return;
+    mockAlertInterval = window.setInterval(() => {
+      if (store.getState().connectionStatus !== 'live') {
+        const severityOptions = ['info', 'warning', 'critical'] as const;
+        const severity = severityOptions[Math.floor(Math.random() * severityOptions.length)];
+        const zoneOptions = ['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'SYS'];
+        const zoneId = zoneOptions[Math.floor(Math.random() * zoneOptions.length)];
+        const alert = {
+          id: `A-MOCK-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          zoneId,
+          message: `Simulated ${severity} event detected in zone ${zoneId}.`,
+          severity
+        };
+        store.getState().addAlert(alert);
+      }
+    }, 8000);
+  };
+
   void load();
   open();
+  startMockAlerts();
+  
   return () => {
     stopped = true;
     if (retry) window.clearTimeout(retry);
+    if (mockAlertInterval) window.clearInterval(mockAlertInterval);
     stopElapsedCounter();
     socket?.close();
   };

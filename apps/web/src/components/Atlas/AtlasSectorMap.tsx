@@ -106,32 +106,42 @@ export const AtlasSectorMap: React.FC = () => {
   }, [zones]);
 
   return (
-    <div className="flex-1 relative bg-background flex items-center justify-center h-full overflow-hidden">
-      <Canvas camera={{ position: [0, 8, 8], fov: 50 }}>
-        <ambientLight intensity={0.4} />
-        <pointLight position={[10, 10, 10]} intensity={1} />
-        <spotLight position={[-10, 20, -10]} angle={0.3} penumbra={1} intensity={1} color="#14b8a6" />
-        
-        {/* Floor Grid */}
-        <gridHelper args={[12, 12, '#14b8a6', '#0f766e']} position={[0, 0.01, 0]} />
-        
-        {['C1', 'C2', 'C3', 'C4', 'C5', 'C6'].map((id) => (
-          <ZoneBox 
-            key={id} 
-            zoneId={id} 
-            data={zones[id]} 
-            isHighestRisk={highestRiskZoneId === id} 
-          />
-        ))}
-
-        <OrbitControls 
-          enablePan={false}
-          minPolarAngle={0}
-          maxPolarAngle={Math.PI / 2.2}
-          minDistance={5}
-          maxDistance={20}
-        />
-      </Canvas>
+    <div className="flex-1 relative flex flex-col h-full bg-[#f8f9fa]">
+      {/* Header */}
+      <div className="flex justify-between items-center p-4 border-b border-[#d1d5db] shrink-0 bg-white">
+        <h2 className="font-bold text-lg tracking-wider text-black m-0 uppercase">Atlas Sector Map</h2>
+        <div className="flex gap-4">
+          <span className="flex items-center gap-2 text-sm text-black">
+            <div className="w-4 h-4 bg-[#ef4444] border border-black/20"></div> Critical
+          </span>
+          <span className="flex items-center gap-2 text-sm text-black">
+            <div className="w-4 h-4 bg-[#f59e0b] border border-black/20"></div> Warning
+          </span>
+          <span className="flex items-center gap-2 text-sm text-black">
+            <div className="w-4 h-4 bg-white border border-black/50"></div> Nominal
+          </span>
+        </div>
+      </div>
+      
+      {/* Canvas */}
+      <div className="flex-1 relative overflow-hidden">
+        <Canvas camera={{ position: [0, 15, 0], fov: 45 }}>
+          <ambientLight intensity={0.6} />
+          <pointLight position={[0, 20, 0]} intensity={0.8} />
+          
+          {/* Floor Grid */}
+          <gridHelper args={[10, 10, '#14b8a6', '#14b8a6']} position={[0, -0.01, 0]} />
+          
+          {['C1', 'C2', 'C3', 'C4', 'C5', 'C6'].map((id) => (
+            <ZoneBox 
+              key={id} 
+              zoneId={id} 
+              data={zones[id]} 
+              isHighestRisk={highestRiskZoneId === id} 
+            />
+          ))}
+        </Canvas>
+      </div>
     </div>
   );
 };
