@@ -1,0 +1,26 @@
+{
+  "name": "safentra",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=apps/server\" \"npm run dev --workspace=apps/web\"",
+    "dev:server": "npm run dev --workspace=apps/server",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspaces",
+    "build:server": "npm run build --workspace=apps/server",
+    "build:web": "npm run build --workspace=apps/web",
+    "build:types": "npm run build --workspace=packages/types",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "web": "^0.0.0"
+  }
+}

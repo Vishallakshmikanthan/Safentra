@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface-container text-primary;
+  }
+  * {
+    border-radius: 0 !important; /* Strict sharp corners */
+  }
+}
+
+/* Custom scrollbar for industrial feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: theme('colors.surface-variant');
+  border-left: 1px solid theme('colors.primary');
+}
+::-webkit-scrollbar-thumb {
+  background: theme('colors.primary');
+}
+
+/* Grid background pattern */
+.grid-bg {
+  background-image: 
+    linear-gradient(theme('colors.outline-variant') 1px, transparent 1px),
+    linear-gradient(90deg, theme('colors.outline-variant') 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* SVG Convergence Ring Animation */
+@keyframes pulse-ring {
+  0% { stroke-width: 1px; opacity: 0.8; }
+  50% { stroke-width: 3px; opacity: 1; stroke: theme('colors.error'); }
+  100% { stroke-width: 1px; opacity: 0.8; }
+}
+.anim-ring {
+  animation: pulse-ring 3s infinite ease-in-out;
+}
