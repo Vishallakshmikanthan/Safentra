@@ -36,7 +36,7 @@
 
 ---
 
-## 👥 Team Safentra
+## 👥 Team VibeSync
 
 | Member | Role | GitHub | LinkedIn |
 |--------|------|--------|----------|
