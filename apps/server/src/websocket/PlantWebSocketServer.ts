@@ -496,13 +496,11 @@ export class PlantWebSocketServer {
   }
 
   private runSimulationStep(): void {
-    // Process simulation events
     const { events, eventIndex, speed } = this.simulationState;
     if (eventIndex >= events.length) {
       this.simulationState.running = false;
       return;
     }
-
     const currentEvent = events[eventIndex];
     if (this.simulationState.currentTime >= currentEvent.timestamp) {
       this.processSimulationEvent(currentEvent);
@@ -520,7 +518,6 @@ export class PlantWebSocketServer {
         this.graph.moveWorker(event.payload.workerId, event.payload.zoneId, event.payload.position, event.payload.status);
         break;
       case 'permit_request':
-        // Handle permit request
         break;
       case 'chaos_inject':
         this.handleChaosInjection(event.payload);
@@ -537,17 +534,21 @@ export class PlantWebSocketServer {
 
   private broadcast(message: WebSocketMessage): void {
     const data = JSON.stringify(message);
-    this.clients.forEach((client, clientId) => {
+    this.clients.forEach((client) => {
       if (client.ws.readyState === WebSocket.OPEN) {
-        // Check subscription
-        if (client.subscriptions.includes('all') || 
+        if (client.subscriptions.includes('all') ||
             client.subscriptions.includes(message.type) ||
-            (message.payload && typeof message.payload === 'object' && 'zoneId' in message.payload && 
+            (message.payload && typeof message.payload === 'object' && 'zoneId' in message.payload &&
              client.subscriptions.includes(`zone:${(message.payload as any).zoneId}`))) {
           client.ws.send(data);
         }
       }
     });
+  }
+
+  /** Public broadcast — allows external modules (e.g. SensorSimulator) to push messages. */
+  broadcastMessage(message: WebSocketMessage): void {
+    this.broadcast(message);
   }
 
   private sendToClient(clientId: string, message: WebSocketMessage): void {
@@ -564,6 +565,7 @@ export class PlantWebSocketServer {
   getSimulationState(): SimulationState {
     return this.simulationState;
   }
+
 
   getChaosState(): ChaosState {
     return this.chaosState;

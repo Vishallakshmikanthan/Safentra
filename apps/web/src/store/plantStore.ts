@@ -11,7 +11,13 @@ interface PlantState {
   shiftChangeover: boolean;
   connectionStatus: 'connecting' | 'live' | 'offline';
   currentView: 'dashboard' | 'permits' | 'forge' | 'field' | 'live_feed' | 'sensors' | 'reports' | 'settings' | 'support';
-  
+
+  // ─── Danger Mode ─────────────────────────────────────────────────────────────
+  dangerMode: boolean;
+  simulationMode: 'normal' | 'danger_active' | 'returning_to_normal';
+  dangerElapsedSeconds: number;
+  // ─────────────────────────────────────────────────────────────────────────────
+
   // Actions
   setCurrentView: (view: PlantState['currentView']) => void;
   updateSensor: (id: string, value: number) => void;
@@ -19,6 +25,11 @@ interface PlantState {
   triggerCriticalEvent: () => void;
   hydrate: (state: Partial<Pick<PlantState, 'zones' | 'sensors' | 'workers' | 'permits' | 'riskEvents' | 'alerts' | 'shiftChangeover'>>) => void;
   setConnectionStatus: (status: PlantState['connectionStatus']) => void;
+  setDangerMode: (active: boolean) => void;
+  setSimulationMode: (mode: PlantState['simulationMode']) => void;
+  setDangerElapsed: (seconds: number) => void;
+  incrementDangerElapsed: () => void;
+  resetDangerElapsed: () => void;
 }
 
 // Initial Mock Data
@@ -70,6 +81,9 @@ export const usePlantStore = create<PlantState>((set) => ({
   shiftChangeover: true,
   connectionStatus: 'connecting',
   currentView: 'dashboard',
+  dangerMode: false,
+  simulationMode: 'normal',
+  dangerElapsedSeconds: 0,
 
   setCurrentView: (view) => set({ currentView: view }),
 
@@ -98,8 +112,17 @@ export const usePlantStore = create<PlantState>((set) => ({
   }),
 
   hydrate: (state) => set(state),
-  setConnectionStatus: (connectionStatus) => set({ connectionStatus })
+  setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
+
+  // ─── Danger Mode Actions ────────────────────────────────────────────────────
+  setDangerMode: (active) => set({ dangerMode: active }),
+  setSimulationMode: (mode) => set({ simulationMode: mode }),
+  setDangerElapsed: (seconds) => set({ dangerElapsedSeconds: seconds }),
+  incrementDangerElapsed: () => set((state) => ({ dangerElapsedSeconds: state.dangerElapsedSeconds + 1 })),
+  resetDangerElapsed: () => set({ dangerElapsedSeconds: 0 }),
+  // ─────────────────────────────────────────────────────────────────────────────
 }));
+
 
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
 const wsUrl = import.meta.env.VITE_WS_URL ?? apiUrl.replace(/^http/, 'ws');
@@ -109,6 +132,7 @@ const wsUrl = import.meta.env.VITE_WS_URL ?? apiUrl.replace(/^http/, 'ws');
 export function connectPlantFeed(): () => void {
   let socket: WebSocket | undefined;
   let retry: number | undefined;
+  let elapsedInterval: number | undefined;
   let stopped = false;
   const store = usePlantStore;
 
@@ -122,18 +146,82 @@ export function connectPlantFeed(): () => void {
     }
   };
 
+  const startElapsedCounter = () => {
+    if (elapsedInterval) return;
+    elapsedInterval = window.setInterval(() => {
+      store.getState().incrementDangerElapsed();
+    }, 1000);
+  };
+
+  const stopElapsedCounter = () => {
+    if (elapsedInterval) {
+      window.clearInterval(elapsedInterval);
+      elapsedInterval = undefined;
+    }
+  };
+
   const open = () => {
     if (stopped) return;
     store.getState().setConnectionStatus('connecting');
     socket = new WebSocket(wsUrl);
     socket.onopen = () => {
       store.getState().setConnectionStatus('live');
-      socket?.send(JSON.stringify({ type: 'subscribe', payload: ['state_update', 'risk_event', 'alert'] }));
+      socket?.send(JSON.stringify({ type: 'subscribe', payload: ['state_update', 'risk_event', 'alert', 'simulation_status', 'simulation_tick'] }));
     };
     socket.onmessage = ({ data }) => {
       try {
         const message = JSON.parse(data as string);
-        if (message.type === 'state_update' && message.payload) store.getState().hydrate(message.payload);
+
+        if (message.type === 'state_update' && message.payload) {
+          store.getState().hydrate(message.payload);
+        }
+
+        if (message.type === 'simulation_status' && message.payload) {
+          const { mode, dangerMode } = message.payload;
+          if (mode === 'danger' || dangerMode === true) {
+            store.getState().setDangerMode(true);
+            store.getState().setSimulationMode('danger_active');
+            store.getState().resetDangerElapsed();
+            startElapsedCounter();
+          } else {
+            store.getState().setDangerMode(false);
+            store.getState().setSimulationMode('returning_to_normal');
+            stopElapsedCounter();
+            store.getState().resetDangerElapsed();
+            // After ~25s (recovery time) flip back to 'normal'
+            window.setTimeout(() => {
+              store.getState().setSimulationMode('normal');
+            }, 25_000);
+          }
+        }
+
+        if (message.type === 'simulation_tick' && message.payload) {
+          const { dangerMode, dangerElapsedSeconds } = message.payload;
+          if (typeof dangerMode === 'boolean') {
+            const current = store.getState().dangerMode;
+            if (current !== dangerMode) {
+              store.getState().setDangerMode(dangerMode);
+            }
+          }
+          if (typeof dangerElapsedSeconds === 'number' && store.getState().dangerMode) {
+            store.getState().setDangerElapsed(dangerElapsedSeconds);
+          }
+        }
+
+        if (message.type === 'risk_event' && message.payload) {
+          const event = message.payload;
+          const alert = {
+            id: `risk-${event.id ?? Date.now()}`,
+            timestamp: event.timestamp ?? new Date().toISOString(),
+            zoneId: event.zoneId ?? 'SYS',
+            message: event.patternDescription ?? `Risk event: ${event.patternMatched}`,
+            severity: event.severity === 'critical' ? 'critical' as const
+              : event.severity === 'high' ? 'warning' as const
+              : 'info' as const,
+          };
+          store.getState().addAlert(alert);
+        }
+
       } catch { /* Ignore malformed network frames. */ }
     };
     socket.onerror = () => socket?.close();
@@ -148,6 +236,7 @@ export function connectPlantFeed(): () => void {
   return () => {
     stopped = true;
     if (retry) window.clearTimeout(retry);
+    stopElapsedCounter();
     socket?.close();
   };
 }

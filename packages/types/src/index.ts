@@ -89,7 +89,7 @@ export interface PlantState {
 }
 
 export interface WebSocketMessage {
-  type: 'state_update' | 'risk_event' | 'alert' | 'permit_blocked' | 'permit_approved' | 'worker_moved' | 'sensor_update' | 'shift_changeover' | 'safety_debt_update' | 'chaos_injected' | 'simulation_tick';
+  type: 'state_update' | 'risk_event' | 'alert' | 'permit_blocked' | 'permit_approved' | 'worker_moved' | 'sensor_update' | 'shift_changeover' | 'safety_debt_update' | 'chaos_injected' | 'simulation_tick' | 'simulation_status';
   payload: unknown;
   timestamp: string;
 }

@@ -1,8 +1,10 @@
 import React from 'react';
 import { usePlantStore } from '../../store/plantStore';
+import { DangerModeButton } from '../DangerModeButton';
 
 export const TopNav: React.FC = () => {
   const connectionStatus = usePlantStore(state => state.connectionStatus);
+  const shiftChangeover = usePlantStore(state => state.shiftChangeover);
   const currentView = usePlantStore(state => state.currentView);
   const setCurrentView = usePlantStore(state => state.setCurrentView);
   return (
@@ -32,9 +34,19 @@ export const TopNav: React.FC = () => {
           Field Check
         </button>
       </nav>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        {/* Shift changeover badge */}
+        {shiftChangeover && (
+          <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-widest bg-amber-900/60 text-amber-300 border border-amber-700 animate-pulse">
+            <span className="material-symbols-outlined text-[12px]">swap_horiz</span>
+            Shift Change
+          </span>
+        )}
+        {/* Danger Mode Button */}
+        <DangerModeButton />
+        {/* Connection status */}
         <span className={`hidden sm:inline font-label-caps text-[10px] uppercase ${connectionStatus === 'live' ? 'text-primary' : 'text-error'}`}>
-          {connectionStatus === 'live' ? 'Live' : connectionStatus}
+          {connectionStatus === 'live' ? '● Live' : connectionStatus}
         </span>
         <button className="text-primary hover:bg-surface-variant p-2 transition-colors duration-150 ease-in-out">
           <span className="material-symbols-outlined">notifications</span>
