@@ -3,7 +3,7 @@ import { PatternMatcher } from '../graph/PatternMatcher';
 import { RiskScorer } from '../graph/RiskScorer';
 import { SafetyDebt } from '../graph/SafetyDebt';
 import { HashChain } from '../ledger/HashChain';
-import { Worker, ChaosInjection, SimulationState, ChaosState, AgentStatus } from '@safentra/types';
+import { WebSocketMessage, Worker, ChaosInjection, SimulationState, ChaosState, AgentStatus } from '@safentra/types';
 export declare class PlantWebSocketServer {
     private wss;
     private clients;
@@ -49,6 +49,8 @@ export declare class PlantWebSocketServer {
     private processSimulationEvent;
     private broadcastState;
     private broadcast;
+    /** Public broadcast — allows external modules (e.g. SensorSimulator) to push messages. */
+    broadcastMessage(message: WebSocketMessage): void;
     private sendToClient;
     getConnectedClients(): number;
     getSimulationState(): SimulationState;

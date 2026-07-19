@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { usePlantStore } from '../../store/plantStore';
+import { usePlantStore } from '../store/plantStore';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
 

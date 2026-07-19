@@ -445,7 +445,6 @@ class PlantWebSocketServer {
         });
     }
     runSimulationStep() {
-        // Process simulation events
         const { events, eventIndex, speed } = this.simulationState;
         if (eventIndex >= events.length) {
             this.simulationState.running = false;
@@ -467,7 +466,6 @@ class PlantWebSocketServer {
                 this.graph.moveWorker(event.payload.workerId, event.payload.zoneId, event.payload.position, event.payload.status);
                 break;
             case 'permit_request':
-                // Handle permit request
                 break;
             case 'chaos_inject':
                 this.handleChaosInjection(event.payload);
@@ -482,9 +480,8 @@ class PlantWebSocketServer {
     }
     broadcast(message) {
         const data = JSON.stringify(message);
-        this.clients.forEach((client, clientId) => {
+        this.clients.forEach((client) => {
             if (client.ws.readyState === ws_1.WebSocket.OPEN) {
-                // Check subscription
                 if (client.subscriptions.includes('all') ||
                     client.subscriptions.includes(message.type) ||
                     (message.payload && typeof message.payload === 'object' && 'zoneId' in message.payload &&
@@ -493,6 +490,10 @@ class PlantWebSocketServer {
                 }
             }
         });
+    }
+    /** Public broadcast — allows external modules (e.g. SensorSimulator) to push messages. */
+    broadcastMessage(message) {
+        this.broadcast(message);
     }
     sendToClient(clientId, message) {
         const client = this.clients.get(clientId);

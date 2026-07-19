@@ -9,6 +9,7 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const PlantGraph_1 = require("./graph/PlantGraph");
 const PlantWebSocketServer_1 = require("./websocket/PlantWebSocketServer");
+const SensorSimulator_1 = require("./simulation/SensorSimulator");
 const uuid_1 = require("uuid");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -33,6 +34,37 @@ const graph = new PlantGraph_1.PlantGraph(initialState);
 // Initialize WebSocket server
 const wsServer = new PlantWebSocketServer_1.PlantWebSocketServer(server, graph);
 wsServer.startTickLoop();
+// ─── Sensor Simulator ────────────────────────────────────────────────────────
+// Continuous sensor simulation: runs a 2s tick loop, drives all PlantGraph
+// sensors with realistic noise, and autonomously fires danger events.
+const sensorSimulator = new SensorSimulator_1.SensorSimulator(graph);
+sensorSimulator.start();
+// Every simulator tick: update sensors → broadcast full state immediately
+sensorSimulator.on('tick', () => {
+    const dangerElapsed = sensorSimulator.getDangerElapsedSeconds();
+    wsServer.broadcastMessage({
+        type: 'simulation_tick',
+        payload: {
+            dangerMode: sensorSimulator.isDangerMode(),
+            dangerElapsedSeconds: dangerElapsed,
+            sensorReadings: sensorSimulator.getCurrentReadings()
+        },
+        timestamp: new Date().toISOString()
+    });
+});
+// On mode change: broadcast status so the frontend updates the danger button
+sensorSimulator.on('mode_change', (mode) => {
+    wsServer.broadcastMessage({
+        type: 'simulation_status',
+        payload: {
+            status: mode === 'danger' ? 'danger_active' : 'normal',
+            mode,
+            dangerMode: mode === 'danger'
+        },
+        timestamp: new Date().toISOString()
+    });
+});
+// ─────────────────────────────────────────────────────────────────────────────
 // REST API Routes
 app.get('/api/state', (req, res) => {
     res.json(graph.getState());
@@ -148,6 +180,24 @@ app.post('/api/simulation/control', (req, res) => {
     wsServer.controlSimulation({ action, speed });
     res.json(wsServer.getSimulationState());
 });
+// ─── Danger Mode Endpoints ───────────────────────────────────────────────────
+app.post('/api/simulation/danger/on', (req, res) => {
+    sensorSimulator.setDangerMode(true);
+    res.json({ status: 'danger_active', message: 'Sensor anomaly ramp started — Vizag compound pattern scenario active' });
+});
+app.post('/api/simulation/danger/off', (req, res) => {
+    sensorSimulator.setDangerMode(false);
+    res.json({ status: 'normal', message: 'Sensors returning to baseline over ~20 seconds' });
+});
+app.get('/api/simulation/danger/status', (req, res) => {
+    res.json({
+        mode: sensorSimulator.isDangerMode() ? 'danger' : 'normal',
+        dangerActive: sensorSimulator.isDangerMode(),
+        dangerElapsedSeconds: sensorSimulator.getDangerElapsedSeconds(),
+        sensorReadings: sensorSimulator.getCurrentReadings()
+    });
+});
+// ─────────────────────────────────────────────────────────────────────────────
 app.get('/api/chaos', (req, res) => {
     res.json(wsServer.getChaosState());
 });
