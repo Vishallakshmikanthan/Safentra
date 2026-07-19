@@ -106,10 +106,6 @@ export const AtlasSectorMap: React.FC = () => {
     return { critical, warning, nominal, maxRisk };
   }, [zones]);
 
-  const gaugeRadius = 40;
-  const gaugeCircumference = Math.PI * gaugeRadius;
-  const gaugeDashoffset = gaugeCircumference - (stats.maxRisk * gaugeCircumference);
-
   return (
     <div className="flex-1 relative flex flex-col h-full bg-[#05080A]">
       {/* Header */}
@@ -147,53 +143,6 @@ export const AtlasSectorMap: React.FC = () => {
         </div>
       </div>
       
-      {/* Left Overlay Card */}
-      <div className="absolute left-6 top-[104px] z-20 w-[280px] bg-[#0F161E]/95 backdrop-blur-xl border border-slate-700/50 rounded p-6 shadow-2xl">
-        <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-8">Overall Plant Risk</h3>
-        
-        {/* Real SVG Gauge */}
-        <div className="relative w-48 h-28 mx-auto mb-8">
-          <svg viewBox="0 0 100 50" className="w-full h-full overflow-visible drop-shadow-xl">
-            {/* Background Arc */}
-            <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#1e293b" strokeWidth="6" strokeLinecap="round" />
-            {/* Foreground Arc */}
-            <path 
-              d="M 10 50 A 40 40 0 0 1 90 50" 
-              fill="none" 
-              stroke={stats.maxRisk > 0.8 ? '#ef4444' : '#f59e0b'} 
-              strokeWidth="6" 
-              strokeLinecap="round"
-              strokeDasharray={gaugeCircumference} 
-              strokeDashoffset={gaugeDashoffset} 
-              className="transition-all duration-1000 ease-out" 
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
-             <span className="text-[40px] font-bold text-white leading-none tracking-tighter">{Math.round(stats.maxRisk * 100)}%</span>
-             <span className="text-[10px] text-secondary font-bold tracking-widest uppercase mt-2">Moderate</span>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-5">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-slate-300 font-medium">Critical Zones</span>
-            <span className="text-error font-bold text-base">{stats.critical}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-slate-300 font-medium">Warning Zones</span>
-            <span className="text-secondary font-bold text-base">{stats.warning}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-slate-300 font-medium">Nominal Zones</span>
-            <span className="text-slate-500 font-bold text-base">{stats.nominal}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm pt-5 border-t border-slate-700/50 mt-1">
-            <span className="text-slate-300 font-medium">Active Alerts</span>
-            <span className="text-white font-bold text-base">{alerts.length}</span>
-          </div>
-        </div>
-      </div>
-
       {/* Canvas */}
       <div className="flex-1 relative overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#111A22] to-[#05080A]">
         <Canvas key={is3D ? '3d' : '2d'} camera={{ position: is3D ? [0, 8, 12] : [0, 16, 0], fov: 45 }}>
@@ -203,8 +152,8 @@ export const AtlasSectorMap: React.FC = () => {
           
           <gridHelper args={[24, 24, '#1e293b', '#0f172a']} position={[0, -0.01, 0]} />
           
-          {/* Shift entire scene right by 1.5 units so it doesn't get covered by the left panel */}
-          <group position={[1.5, 0, 0]}>
+          {/* Centered Scene */}
+          <group position={[0, 0, 0]}>
             {['C1', 'C2', 'C3', 'C4', 'C5', 'C6'].map((id) => (
               <ZoneBox 
                 key={id} 
