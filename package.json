@@ -21,6 +21,7 @@
     "typescript": "^5.4.0"
   },
   "dependencies": {
+    "puppeteer": "^25.3.0",
     "web": "^0.0.0"
   }
 }
