@@ -2,10 +2,10 @@ import express from 'express';
 import { createServer } from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { PlantGraph } from './graph/PlantGraph';
-import { PlantWebSocketServer } from './websocket/PlantWebSocketServer';
-import { SensorSimulator } from './simulation/SensorSimulator';
-import { Zone, Sensor, Worker, Permit, PlantState, ZoneType, SensorType, PermitType, WorkerStatus, PermitStatus } from '@safentra/types';
+import { PlantGraph } from './graph/PlantGraph.js';
+import { PlantWebSocketServer } from './websocket/PlantWebSocketServer.js';
+import { SensorSimulator } from './simulation/SensorSimulator.js';
+import { Zone, Sensor, Worker, Permit, PlantState, ZoneType, SensorType, PermitType, WorkerStatus, PermitStatus, WebSocketMessage } from '@safentra/types';
 import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
@@ -67,6 +67,11 @@ sensorSimulator.on('mode_change', (mode: string) => {
     },
     timestamp: new Date().toISOString()
   });
+});
+
+// Broadcast autonomous agent activity
+sensorSimulator.on('agent_activity', (message: WebSocketMessage) => {
+  wsServer.broadcastMessage(message);
 });
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -84,7 +84,7 @@ export interface PlantState {
     timestamp: string;
 }
 export interface WebSocketMessage {
-    type: 'state_update' | 'risk_event' | 'alert' | 'permit_blocked' | 'permit_approved' | 'worker_moved' | 'sensor_update' | 'shift_changeover' | 'safety_debt_update' | 'chaos_injected' | 'simulation_tick' | 'simulation_status';
+    type: 'state_update' | 'risk_event' | 'alert' | 'permit_blocked' | 'permit_approved' | 'worker_moved' | 'sensor_update' | 'shift_changeover' | 'safety_debt_update' | 'chaos_injected' | 'simulation_tick' | 'simulation_status' | 'oracle_update' | 'forge_candidate' | 'blaze_update' | 'chaos_update' | 'agent_activity' | 'ledger_update';
     payload: unknown;
     timestamp: string;
 }
@@ -234,5 +234,55 @@ export interface AgentStatus {
     status: 'idle' | 'running' | 'error';
     lastRun: string;
     lastResult?: unknown;
+}
+export interface OracleState {
+    isActive: boolean;
+    recommendations: string[];
+    regulations: string[];
+    historicalIncidents: string[];
+    explanation: string;
+    affectedSensors: string[];
+    affectedPermits: string[];
+    workersAtRisk: string[];
+    confidence: number;
+    sources: string[];
+    conversationHistory: {
+        role: 'user' | 'assistant';
+        text: string;
+    }[];
+}
+export interface ForgeState {
+    candidates: ForgeCandidate[];
+    approvalHistory: ForgeCandidate[];
+    rejectionHistory: ForgeCandidate[];
+}
+export interface BlazeState {
+    isActive: boolean;
+    incidentTimeline: {
+        time: string;
+        description: string;
+        status: 'completed' | 'in_progress' | 'pending';
+    }[];
+    evacuationStatus: 'none' | 'ordered' | 'in_progress' | 'completed';
+    emergencyContactsNotified: string[];
+    affectedWorkers: string[];
+    assemblyPoints: {
+        id: string;
+        name: string;
+        capacity: number;
+        currentCount: number;
+    }[];
+    incidentReport: string | null;
+    actionChecklist: {
+        id: string;
+        description: string;
+        completed: boolean;
+    }[];
+    resourceAllocation: {
+        resource: string;
+        status: 'dispatched' | 'arrived' | 'en_route';
+    }[];
+    responseStatus: string;
+    countdownTimer: number | null;
 }
 //# sourceMappingURL=index.d.ts.map

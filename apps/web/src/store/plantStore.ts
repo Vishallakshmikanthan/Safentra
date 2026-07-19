@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Zone, Sensor, Worker, Permit, RiskEvent, Alert } from '../types';
+import type { Zone, Sensor, Worker, Permit, RiskEvent, Alert, OracleState, ForgeState, BlazeState, ChaosState } from '../types';
 
 interface PlantState {
   zones: Record<string, Zone>;
@@ -10,12 +10,18 @@ interface PlantState {
   alerts: Alert[];
   shiftChangeover: boolean;
   connectionStatus: 'connecting' | 'live' | 'offline';
-  currentView: 'dashboard' | 'permits' | 'forge' | 'field' | 'live_feed' | 'sensors' | 'reports' | 'settings' | 'support';
+  currentView: 'dashboard' | 'permits' | 'forge' | 'field' | 'live_feed' | 'sensors' | 'reports' | 'settings' | 'support' | 'oracle' | 'blaze' | 'chaos';
 
   // ─── Danger Mode ─────────────────────────────────────────────────────────────
   dangerMode: boolean;
   simulationMode: 'normal' | 'danger_active' | 'returning_to_normal';
   dangerElapsedSeconds: number;
+
+  // ─── AI Agent States ─────────────────────────────────────────────────────────
+  oracleState: OracleState;
+  forgeState: ForgeState;
+  blazeState: BlazeState;
+  chaosState: ChaosState;
   // ─────────────────────────────────────────────────────────────────────────────
 
   // Actions
@@ -30,6 +36,11 @@ interface PlantState {
   setDangerElapsed: (seconds: number) => void;
   incrementDangerElapsed: () => void;
   resetDangerElapsed: () => void;
+
+  setOracleState: (state: Partial<OracleState>) => void;
+  setForgeState: (state: Partial<ForgeState>) => void;
+  setBlazeState: (state: Partial<BlazeState>) => void;
+  setChaosState: (state: Partial<ChaosState>) => void;
 }
 
 // Initial Mock Data
@@ -85,6 +96,11 @@ export const usePlantStore = create<PlantState>((set) => ({
   simulationMode: 'normal',
   dangerElapsedSeconds: 0,
 
+  oracleState: { isActive: false, recommendations: [], regulations: [], historicalIncidents: [], explanation: '', affectedSensors: [], affectedPermits: [], workersAtRisk: [], confidence: 0, sources: [], conversationHistory: [] },
+  forgeState: { candidates: [], approvalHistory: [], rejectionHistory: [] },
+  blazeState: { isActive: false, incidentTimeline: [], evacuationStatus: 'none', emergencyContactsNotified: [], affectedWorkers: [], assemblyPoints: [], incidentReport: null, actionChecklist: [], resourceAllocation: [], responseStatus: 'STANDBY', countdownTimer: null },
+  chaosState: { activeInjections: [], history: [] },
+
   setCurrentView: (view) => set({ currentView: view }),
 
   updateSensor: (id, value) => set((state) => ({
@@ -120,6 +136,11 @@ export const usePlantStore = create<PlantState>((set) => ({
   setDangerElapsed: (seconds) => set({ dangerElapsedSeconds: seconds }),
   incrementDangerElapsed: () => set((state) => ({ dangerElapsedSeconds: state.dangerElapsedSeconds + 1 })),
   resetDangerElapsed: () => set({ dangerElapsedSeconds: 0 }),
+  
+  setOracleState: (state) => set((s) => ({ oracleState: { ...s.oracleState, ...state } })),
+  setForgeState: (state) => set((s) => ({ forgeState: { ...s.forgeState, ...state } })),
+  setBlazeState: (state) => set((s) => ({ blazeState: { ...s.blazeState, ...state } })),
+  setChaosState: (state) => set((s) => ({ chaosState: { ...s.chaosState, ...state } })),
   // ─────────────────────────────────────────────────────────────────────────────
 }));
 
@@ -166,7 +187,7 @@ export function connectPlantFeed(): () => void {
     socket = new WebSocket(wsUrl);
     socket.onopen = () => {
       store.getState().setConnectionStatus('live');
-      socket?.send(JSON.stringify({ type: 'subscribe', payload: ['state_update', 'risk_event', 'alert', 'simulation_status', 'simulation_tick'] }));
+      socket?.send(JSON.stringify({ type: 'subscribe', payload: ['state_update', 'risk_event', 'alert', 'simulation_status', 'simulation_tick', 'oracle_update', 'forge_candidate', 'blaze_update', 'chaos_update'] }));
     };
     socket.onmessage = ({ data }) => {
       try {
@@ -219,7 +240,21 @@ export function connectPlantFeed(): () => void {
               : event.severity === 'high' ? 'warning' as const
               : 'info' as const,
           };
+          };
           store.getState().addAlert(alert);
+        }
+
+        if (message.type === 'oracle_update' && message.payload) {
+          store.getState().setOracleState(message.payload);
+        }
+        if (message.type === 'forge_candidate' && message.payload) {
+          store.getState().setForgeState(message.payload);
+        }
+        if (message.type === 'blaze_update' && message.payload) {
+          store.getState().setBlazeState(message.payload);
+        }
+        if (message.type === 'chaos_update' && message.payload) {
+          store.getState().setChaosState(message.payload);
         }
 
       } catch { /* Ignore malformed network frames. */ }

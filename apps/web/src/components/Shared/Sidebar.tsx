@@ -25,6 +25,9 @@ export const Sidebar: React.FC = () => {
 
       {/* Navigation Links */}
       <div className="flex-1 overflow-y-auto py-2">
+        <div className="px-gutter pt-4 pb-2">
+          <h3 className="font-label-sm text-on-surface-variant uppercase tracking-widest text-xs">Core</h3>
+        </div>
         <button
           onClick={() => setCurrentView('dashboard')}
           className={`w-full flex items-center px-gutter py-3 transition-all duration-200 border-l-4 ${currentView === 'dashboard' ? 'bg-secondary-container text-on-secondary-container border-primary' : 'text-on-surface-variant hover:bg-secondary-fixed-dim border-transparent'}`}>
@@ -54,6 +57,34 @@ export const Sidebar: React.FC = () => {
           className={`w-full flex items-center px-gutter py-3 transition-all duration-200 border-l-4 ${currentView === 'settings' ? 'bg-secondary-container text-on-secondary-container border-primary' : 'text-on-surface-variant hover:bg-secondary-fixed-dim border-transparent'}`}>
           <span className="material-symbols-outlined mr-4">settings</span>
           <span className="font-label-caps text-label-caps uppercase">Settings</span>
+        </button>
+
+        <div className="px-gutter pt-6 pb-2">
+          <h3 className="font-label-sm text-on-surface-variant uppercase tracking-widest text-xs">AI Agents</h3>
+        </div>
+        <button
+          onClick={() => setCurrentView('oracle')}
+          className={`w-full flex items-center px-gutter py-3 transition-all duration-200 border-l-4 ${currentView === 'oracle' ? 'bg-primary/20 text-primary border-primary' : 'text-on-surface-variant hover:bg-secondary-fixed-dim border-transparent'}`}>
+          <span className="material-symbols-outlined mr-4">smart_toy</span>
+          <span className="font-label-caps text-label-caps uppercase">Oracle</span>
+        </button>
+        <button
+          onClick={() => setCurrentView('forge')}
+          className={`w-full flex items-center px-gutter py-3 transition-all duration-200 border-l-4 ${currentView === 'forge' ? 'bg-secondary/20 text-secondary border-secondary' : 'text-on-surface-variant hover:bg-secondary-fixed-dim border-transparent'}`}>
+          <span className="material-symbols-outlined mr-4">psychology</span>
+          <span className="font-label-caps text-label-caps uppercase">Forge</span>
+        </button>
+        <button
+          onClick={() => setCurrentView('blaze')}
+          className={`w-full flex items-center px-gutter py-3 transition-all duration-200 border-l-4 ${currentView === 'blaze' ? 'bg-error/20 text-error border-error' : 'text-on-surface-variant hover:bg-secondary-fixed-dim border-transparent'}`}>
+          <span className="material-symbols-outlined mr-4">local_fire_department</span>
+          <span className="font-label-caps text-label-caps uppercase">Blaze</span>
+        </button>
+        <button
+          onClick={() => setCurrentView('chaos')}
+          className={`w-full flex items-center px-gutter py-3 transition-all duration-200 border-l-4 ${currentView === 'chaos' ? 'bg-tertiary/20 text-tertiary border-tertiary' : 'text-on-surface-variant hover:bg-secondary-fixed-dim border-transparent'}`}>
+          <span className="material-symbols-outlined mr-4">storm</span>
+          <span className="font-label-caps text-label-caps uppercase">Chaos</span>
         </button>
       </div>
 
