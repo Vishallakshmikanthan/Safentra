@@ -63,7 +63,7 @@ export class SensorSimulator extends EventEmitter {
     return [
       // zone-1 (Coke Oven Battery 1) — primary danger zone for Pattern 12
       {
-        sensorId: 'sensor-1',       // gas_pressure
+        sensorId: 'S-C1-VOC',       // gas_pressure
         baseline: 1.25,
         noiseStdDev: 0.015,
         driftRate: 0.05,
@@ -72,11 +72,11 @@ export class SensorSimulator extends EventEmitter {
         alarmThreshold: 2.0,
         dangerTarget: 1.75,         // elevated, clearly above normal (1.5), well below alarm (2.0)
         isO2: false,
-        correlatesWith: 'sensor-5',
+        correlatesWith: 'S-C2-GAS',
         correlationCoeff: 0.55,
       },
       {
-        sensorId: 'sensor-2',       // h2s_concentration
+        sensorId: 'S-C1-H2S',       // h2s_concentration
         baseline: 5.0,
         noiseStdDev: 0.25,
         driftRate: 0.8,
@@ -87,7 +87,7 @@ export class SensorSimulator extends EventEmitter {
         isO2: false,
       },
       {
-        sensorId: 'sensor-3',       // co_concentration
+        sensorId: 'S-C1-CO',       // co_concentration
         baseline: 15.0,
         noiseStdDev: 0.6,
         driftRate: 1.5,
@@ -98,7 +98,7 @@ export class SensorSimulator extends EventEmitter {
         isO2: false,
       },
       {
-        sensorId: 'sensor-4',       // temperature
+        sensorId: 'S-C1-TMP',       // temperature
         baseline: 45.0,
         noiseStdDev: 0.5,
         driftRate: 2.0,
@@ -110,7 +110,7 @@ export class SensorSimulator extends EventEmitter {
       },
       // zone-2 (Coke Oven Battery 2)
       {
-        sensorId: 'sensor-5',       // gas_pressure
+        sensorId: 'S-C2-GAS',       // gas_pressure
         baseline: 1.1,
         noiseStdDev: 0.012,
         driftRate: 0.04,
@@ -119,11 +119,11 @@ export class SensorSimulator extends EventEmitter {
         alarmThreshold: 2.0,
         dangerTarget: 1.42,         // slightly elevated in adjacent zone
         isO2: false,
-        correlatesWith: 'sensor-1',
+        correlatesWith: 'S-C1-VOC',
         correlationCoeff: 0.55,
       },
       {
-        sensorId: 'sensor-6',       // h2s_concentration
+        sensorId: 'S-C2-H2S',       // h2s_concentration
         baseline: 3.0,
         noiseStdDev: 0.18,
         driftRate: 0.5,
@@ -134,7 +134,7 @@ export class SensorSimulator extends EventEmitter {
         isO2: false,
       },
       {
-        sensorId: 'sensor-7',       // co_concentration
+        sensorId: 'S-C2-CO',       // co_concentration
         baseline: 10.0,
         noiseStdDev: 0.4,
         driftRate: 1.0,
@@ -145,7 +145,7 @@ export class SensorSimulator extends EventEmitter {
         isO2: false,
       },
       {
-        sensorId: 'sensor-8',       // temperature
+        sensorId: 'S-C2-TMP',       // temperature
         baseline: 42.0,
         noiseStdDev: 0.4,
         driftRate: 1.5,
@@ -157,7 +157,7 @@ export class SensorSimulator extends EventEmitter {
       },
       // zone-3 (Gas Holder)
       {
-        sensorId: 'sensor-9',       // gas_pressure
+        sensorId: 'S-C3-GAS',       // gas_pressure
         baseline: 0.8,
         noiseStdDev: 0.02,
         driftRate: 0.03,
@@ -168,7 +168,7 @@ export class SensorSimulator extends EventEmitter {
         isO2: false,
       },
       {
-        sensorId: 'sensor-10',      // h2s_concentration
+        sensorId: 'S-C3-H2S',      // h2s_concentration
         baseline: 2.0,
         noiseStdDev: 0.1,
         driftRate: 0.3,
@@ -179,7 +179,7 @@ export class SensorSimulator extends EventEmitter {
         isO2: false,
       },
       {
-        sensorId: 'sensor-11',      // oxygen_level
+        sensorId: 'S-C3-O2',      // oxygen_level
         baseline: 20.9,
         noiseStdDev: 0.05,
         driftRate: 0.1,
@@ -191,7 +191,7 @@ export class SensorSimulator extends EventEmitter {
       },
       // zone-4 (Maintenance Bay)
       {
-        sensorId: 'sensor-12',      // h2s_concentration
+        sensorId: 'S-C4-GAS',      // h2s_concentration
         baseline: 1.0,
         noiseStdDev: 0.06,
         driftRate: 0.2,
@@ -202,7 +202,7 @@ export class SensorSimulator extends EventEmitter {
         isO2: false,
       },
       {
-        sensorId: 'sensor-13',      // oxygen_level
+        sensorId: 'S-C4-TMP',      // oxygen_level
         baseline: 20.9,
         noiseStdDev: 0.05,
         driftRate: 0.08,
@@ -214,7 +214,7 @@ export class SensorSimulator extends EventEmitter {
       },
       // zone-5 (Control Room)
       {
-        sensorId: 'sensor-14',      // oxygen_level
+        sensorId: 'S-C5-O2',      // oxygen_level
         baseline: 20.9,
         noiseStdDev: 0.04,
         driftRate: 0.05,
@@ -226,7 +226,7 @@ export class SensorSimulator extends EventEmitter {
       },
       // zone-6 (Entry Point)
       {
-        sensorId: 'sensor-15',      // proximity
+        sensorId: 'S-C5-PRX',      // proximity
         baseline: 0,
         noiseStdDev: 0,
         driftRate: 0,
@@ -237,7 +237,7 @@ export class SensorSimulator extends EventEmitter {
         isO2: false,
       },
       {
-        sensorId: 'sensor-16',      // flow_rate
+        sensorId: 'S-C6-FLW',      // flow_rate
         baseline: 100,
         noiseStdDev: 1.5,
         driftRate: 3.0,
@@ -349,7 +349,7 @@ export class SensorSimulator extends EventEmitter {
           activeInjections: [{
             id: 'chaos-1',
             type: 'sensor_failure',
-            zoneId: 'zone-1',
+            zoneId: 'C1',
             severity: 'low',
             injectedAt: new Date().toISOString(),
             expiresAt: new Date(Date.now() + 60000).toISOString()
@@ -367,7 +367,7 @@ export class SensorSimulator extends EventEmitter {
       this.graph.addPermit({
         id: 'AUTO-HW-001',
         type: 'hot_work',
-        zoneId: 'zone-1',
+        zoneId: 'C1',
         requestedBy: 'Auto-scenario (welding repair)',
         validFrom: new Date().toISOString(),
         validUntil: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
@@ -403,7 +403,7 @@ export class SensorSimulator extends EventEmitter {
     // T+28s: Worker 1 enters confined space & Oracle springs to life
     if (elapsedSeconds >= 28 && !this.dangerEventsEmitted.has('confined-1')) {
       this.dangerEventsEmitted.add('confined-1');
-      this.graph.moveWorker('worker-1', 'zone-1', { x: 155, y: 140 }, 'in_confined_space');
+      this.graph.moveWorker('worker-1', 'C1', { x: 155, y: 140 }, 'in_confined_space');
       this.emit('agent_activity', {
         type: 'oracle_update',
         payload: {
@@ -412,7 +412,7 @@ export class SensorSimulator extends EventEmitter {
           regulations: ['OISD-STD-105 Clause 4.2: Confined space entry during concurrent hot work'],
           historicalIncidents: ['Bhilai Steel Plant Gas Leak (2014)'],
           explanation: 'Sensors show H2S rising rapidly while a worker is in a confined space and a hot work permit is active. This creates a severe compound risk.',
-          affectedSensors: ['sensor-2', 'sensor-3'],
+          affectedSensors: ['S-C1-H2S', 'S-C1-CO'],
           affectedPermits: ['AUTO-HW-001'],
           workersAtRisk: ['worker-1'],
           confidence: 0.94,
@@ -427,14 +427,14 @@ export class SensorSimulator extends EventEmitter {
     // T+33s: Worker 2 enters confined space
     if (elapsedSeconds >= 33 && !this.dangerEventsEmitted.has('confined-2')) {
       this.dangerEventsEmitted.add('confined-2');
-      this.graph.moveWorker('worker-2', 'zone-2', { x: 160, y: 145 }, 'in_confined_space');
+      this.graph.moveWorker('worker-2', 'C2', { x: 160, y: 145 }, 'in_confined_space');
       console.log('[SensorSimulator] T+33s: worker-2 entered confined space in zone-2');
     }
 
     // T+38s: Worker 3 — Pattern 12 fires after this tick & Blaze triggers
     if (elapsedSeconds >= 38 && !this.dangerEventsEmitted.has('confined-3')) {
       this.dangerEventsEmitted.add('confined-3');
-      this.graph.moveWorker('worker-3', 'zone-3', { x: 158, y: 150 }, 'in_confined_space');
+      this.graph.moveWorker('worker-3', 'C3', { x: 158, y: 150 }, 'in_confined_space');
       this.emit('agent_activity', {
         type: 'blaze_update',
         payload: {
@@ -585,9 +585,9 @@ export class SensorSimulator extends EventEmitter {
 
       // Reset plant state — workers return to active, permits cleared, shift off
       this.graph.setShiftChangeover(false);
-      this.graph.moveWorker('worker-1', 'zone-1', { x: 150, y: 150 }, 'active');
-      this.graph.moveWorker('worker-2', 'zone-2', { x: 400, y: 150 }, 'active');
-      this.graph.moveWorker('worker-3', 'zone-4', { x: 400, y: 350 }, 'active');
+      this.graph.moveWorker('worker-1', 'C1', { x: 150, y: 150 }, 'active');
+      this.graph.moveWorker('worker-2', 'C2', { x: 400, y: 150 }, 'active');
+      this.graph.moveWorker('worker-3', 'C4', { x: 400, y: 350 }, 'active');
 
       // Remove auto-injected permit
       const permit = this.graph.getPermit('AUTO-HW-001');

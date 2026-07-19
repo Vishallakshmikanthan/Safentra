@@ -3,6 +3,32 @@ import { usePlantStore } from '../../store/plantStore';
 
 export const ChaosPanel: React.FC = () => {
   const chaosState = usePlantStore(state => state.chaosState);
+  
+  const injectScenario = async (type: string, zoneId: string, parameters: any = {}) => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+      await fetch(`${apiUrl}/api/chaos/inject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, zoneId, parameters, duration: 60, severity: 'high' })
+      });
+    } catch (e) {
+      console.error('Failed to inject chaos:', e);
+    }
+  };
+
+  const getChaosPayload = (scenario: string) => {
+    switch (scenario) {
+      case 'Sensor Spike': return { type: 'sensor_spike', zoneId: 'C1', parameters: { sensorType: 'h2s_concentration', value: 30 } };
+      case 'Gas Leak': return { type: 'gas_leak', zoneId: 'C2', parameters: { gasType: 'co_concentration', value: 100 } };
+      case 'Worker Incapacitated': return { type: 'worker_incapacitated', zoneId: 'C3', parameters: { workerId: 'worker-7' } };
+      case 'Equipment Failure': return { type: 'equipment_failure', zoneId: 'C4', parameters: { sensorType: 'temperature' } };
+      case 'Permit Conflict': return { type: 'permit_conflict', zoneId: 'C1', parameters: {} };
+      case 'Communication Drop': return { type: 'sensor_failure', zoneId: 'C6', parameters: { sensorType: 'proximity' } };
+      default: return { type: 'sensor_spike', zoneId: 'C1', parameters: { sensorType: 'gas_pressure', value: 2.5 } };
+    }
+  };
+
 
   return (
     <div className="h-full flex flex-col p-gutter gap-4 bg-background text-on-background animate-in fade-in zoom-in duration-300">
@@ -34,7 +60,12 @@ export const ChaosPanel: React.FC = () => {
             
             <div className="grid grid-cols-2 gap-4">
               {['Sensor Spike', 'Gas Leak', 'Worker Incapacitated', 'Equipment Failure', 'Permit Conflict', 'Communication Drop'].map((scenario, i) => (
-                <button key={i} className="flex flex-col items-start p-4 bg-background border border-outline/20 hover:border-tertiary hover:bg-tertiary/5 transition-all group text-left">
+                <button key={i} 
+                  onClick={() => {
+                    const payload = getChaosPayload(scenario);
+                    injectScenario(payload.type, payload.zoneId, payload.parameters);
+                  }}
+                  className="flex flex-col items-start p-4 bg-background border border-outline/20 hover:border-tertiary hover:bg-tertiary/5 transition-all group text-left">
                   <div className="flex justify-between w-full mb-2">
                     <span className="text-body-lg font-medium text-on-surface uppercase group-hover:text-tertiary">{scenario}</span>
                     <span className="material-symbols-outlined text-on-surface-variant group-hover:text-tertiary">play_arrow</span>

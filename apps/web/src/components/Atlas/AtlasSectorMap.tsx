@@ -1,66 +1,137 @@
-import React from 'react';
+import React, { useRef, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Text, Html } from '@react-three/drei';
 import { usePlantStore } from '../../store/plantStore';
+import type { Zone } from '../../types';
+import * as THREE from 'three';
+
+// Helper to convert 2D rect into 3D position & size on a 10x10 plane
+// Using a 10x10 coordinate system centered at 0,0
+const MAP_SIZE = 10;
+const getBoxProps = (xPct: number, yPct: number, wPct: number, hPct: number) => {
+  const width = wPct * MAP_SIZE;
+  const depth = hPct * MAP_SIZE;
+  // Canvas X goes right, Z goes forward (so -Z is "up" on screen, +Z is "down").
+  // Center is 0,0
+  const posX = (xPct * MAP_SIZE) - (MAP_SIZE / 2) + (width / 2);
+  const posZ = (yPct * MAP_SIZE) - (MAP_SIZE / 2) + (depth / 2);
+  return { position: [posX, 0.5, posZ] as [number, number, number], args: [width - 0.2, 1, depth - 0.2] as [number, number, number] };
+};
+
+const ZONES_LAYOUT: Record<string, any> = {
+  'C1': getBoxProps(0, 0, 0.5, 0.5),
+  'C2': getBoxProps(0.5, 0, 0.5, 0.333),
+  'C3': getBoxProps(0.75, 0.333, 0.25, 0.333),
+  'C4': getBoxProps(0, 0.5, 0.4, 0.5),
+  'C5': getBoxProps(0.4, 0.5, 0.35, 0.5),
+  'C6': getBoxProps(0.75, 0.666, 0.25, 0.334)
+};
+
+const ZoneBox: React.FC<{ zoneId: string; data?: Zone; isHighestRisk: boolean }> = ({ zoneId, data, isHighestRisk }) => {
+  const layout = ZONES_LAYOUT[zoneId] || { position: [0,0,0], args: [1,1,1] };
+  const meshRef = useRef<THREE.Mesh>(null);
+  
+  const risk = data?.riskScore || 0;
+  const isDanger = risk > 0.8;
+  const color = isDanger ? '#ef4444' : '#14b8a6';
+
+  useFrame((state) => {
+    if (isHighestRisk && meshRef.current) {
+      meshRef.current.position.y = 0.5 + Math.sin(state.clock.elapsedTime * 4) * 0.1;
+    } else if (meshRef.current) {
+      meshRef.current.position.y = THREE.MathUtils.lerp(meshRef.current.position.y, 0.5, 0.1);
+    }
+  });
+
+  return (
+    <mesh position={layout.position} ref={meshRef}>
+      <boxGeometry args={layout.args} />
+      <meshStandardMaterial 
+        color={color} 
+        transparent 
+        opacity={isDanger ? 0.8 : 0.4} 
+        emissive={color}
+        emissiveIntensity={isDanger ? 0.5 : 0.1}
+      />
+      
+      {/* Label */}
+      <Text
+        position={[0, 0.6, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        fontSize={0.8}
+        color={isDanger ? '#ffffff' : '#14b8a6'}
+        anchorX="center"
+        anchorY="middle"
+      >
+        {zoneId}
+      </Text>
+      
+      {/* Risk Score */}
+      <Text
+        position={[0, 0.51, 0.6]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        fontSize={0.3}
+        color={isDanger ? '#ffffff' : '#14b8a6'}
+        anchorX="center"
+        anchorY="middle"
+      >
+        {Math.round(risk * 100)}% RISK
+      </Text>
+
+      {/* HTML Overlay for alerts */}
+      {isHighestRisk && (
+        <Html position={[0, 1.5, 0]} center zIndexRange={[100, 0]}>
+          <div className="bg-error text-on-error px-2 py-1 font-label-caps uppercase whitespace-nowrap animate-pulse border border-error-container">
+            Critical Hotspot
+          </div>
+        </Html>
+      )}
+    </mesh>
+  );
+};
 
 export const AtlasSectorMap: React.FC = () => {
   const zones = usePlantStore((state) => state.zones);
   
-  // Extract specific zones for the hardcoded layout as in Stitch design
-  // The visual layout intentionally stays fixed; bind its hotspot to whichever
-  // backend zone currently carries the highest live compound-risk score.
-  const c4 = zones['C4'] ?? Object.values(zones).reduce<typeof zones[string] | undefined>(
-    (highest, zone) => !highest || zone.riskScore > highest.riskScore ? zone : highest,
-    undefined
-  );
+  const highestRiskZoneId = useMemo(() => {
+    let highestId = 'C4';
+    let maxRisk = 0;
+    Object.values(zones).forEach(z => {
+      if (z.riskScore > maxRisk) {
+        maxRisk = z.riskScore;
+        highestId = z.id;
+      }
+    });
+    return highestId;
+  }, [zones]);
 
   return (
-    <div className="flex-1 grid-bg p-8 relative overflow-hidden flex items-center justify-center">
-      {/* Central Plant SVG Structure */}
-      <div className="relative w-[600px] h-[500px] border-2 border-primary bg-surface/50">
+    <div className="flex-1 relative bg-background flex items-center justify-center h-full overflow-hidden">
+      <Canvas camera={{ position: [0, 8, 8], fov: 50 }}>
+        <ambientLight intensity={0.4} />
+        <pointLight position={[10, 10, 10]} intensity={1} />
+        <spotLight position={[-10, 20, -10]} angle={0.3} penumbra={1} intensity={1} color="#14b8a6" />
         
-        {/* Zone C1 */}
-        <div className="absolute top-0 left-0 w-1/2 h-1/2 border-r border-b border-outline p-4 hover:bg-primary/5 transition-colors">
-          <span className="font-data-lg text-data-lg font-bold text-on-surface-variant">C1</span>
-        </div>
+        {/* Floor Grid */}
+        <gridHelper args={[12, 12, '#14b8a6', '#0f766e']} position={[0, 0.01, 0]} />
         
-        {/* Zone C2 */}
-        <div className="absolute top-0 right-0 w-1/2 h-1/3 border-b border-outline p-4 hover:bg-primary/5 transition-colors">
-          <span className="font-data-lg text-data-lg font-bold text-on-surface-variant">C2</span>
-        </div>
-        
-        {/* Zone C3 */}
-        <div className="absolute top-[33.33%] right-0 w-1/4 h-[33.33%] border-b border-l border-outline p-4 hover:bg-primary/5 transition-colors">
-          <span className="font-data-lg text-data-lg font-bold text-on-surface-variant">C3</span>
-        </div>
-        
-        {/* Zone C4 (High Risk Hotspot) */}
-        <div className={`absolute bottom-0 left-0 w-[40%] h-1/2 border-r border-outline p-4 relative overflow-hidden ${
-          c4?.riskScore > 0.8 ? 'bg-error/20' : 'hover:bg-primary/5'
-        }`}>
-          <span className={`font-data-lg text-data-lg font-bold relative z-10 ${c4?.riskScore > 0.8 ? 'text-error' : 'text-on-surface-variant'}`}>C4</span>
-          
-          {/* Blinking indicator */}
-          {c4?.riskScore > 0.8 && (
-            <>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full border border-error anim-ring"></div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full border border-error bg-error/30"></div>
-            </>
-          )}
-        </div>
-        
-        {/* Zone C5 */}
-        <div className="absolute bottom-0 left-[40%] w-[35%] h-[40%] border-r border-t border-outline p-4 hover:bg-primary/5 transition-colors">
-          <span className="font-data-lg text-data-lg font-bold text-on-surface-variant">C5</span>
-        </div>
-        
-        {/* Zone C6 */}
-        <div className="absolute bottom-0 right-0 w-[25%] h-[66.66%] border-l border-outline bg-secondary-fixed/40 p-4">
-          <span className="font-data-lg text-data-lg font-bold text-secondary">C6</span>
-        </div>
-        
-        {/* Connecting Pipelines (Decorative) */}
-        <div className="absolute top-1/4 left-1/4 w-1/2 h-0 border-t-2 border-dashed border-primary"></div>
-        <div className="absolute top-1/2 left-[40%] w-0 h-1/4 border-l-2 border-primary"></div>
-      </div>
+        {['C1', 'C2', 'C3', 'C4', 'C5', 'C6'].map((id) => (
+          <ZoneBox 
+            key={id} 
+            zoneId={id} 
+            data={zones[id]} 
+            isHighestRisk={highestRiskZoneId === id} 
+          />
+        ))}
+
+        <OrbitControls 
+          enablePan={false}
+          minPolarAngle={0}
+          maxPolarAngle={Math.PI / 2.2}
+          minDistance={5}
+          maxDistance={20}
+        />
+      </Canvas>
     </div>
   );
 };

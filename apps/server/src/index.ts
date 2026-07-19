@@ -301,10 +301,10 @@ process.on('SIGINT', () => {
 function createDefaultPlantState(): Partial<PlantState> {
   const zones: Zone[] = [
     {
-      id: 'zone-1',
+      id: 'C1',
       name: 'Coke Oven Battery 1',
       type: 'coke_oven',
-      adjacentZones: ['zone-2', 'zone-3'],
+      adjacentZones: ['C2', 'C3'],
       hazardClass: 'A',
       polygon: [[100, 100], [300, 100], [300, 250], [100, 250]],
       riskScore: 0,
@@ -312,13 +312,13 @@ function createDefaultPlantState(): Partial<PlantState> {
       safetyDebt: 0,
       activeWorkers: [],
       activePermits: [],
-      sensors: ['sensor-1', 'sensor-2', 'sensor-3', 'sensor-4']
+      sensors: ['S-C1-VOC', 'S-C1-H2S', 'S-C1-CO', 'S-C1-TMP']
     },
     {
-      id: 'zone-2',
+      id: 'C2',
       name: 'Coke Oven Battery 2',
       type: 'coke_oven',
-      adjacentZones: ['zone-1', 'zone-4'],
+      adjacentZones: ['C1', 'C4'],
       hazardClass: 'A',
       polygon: [[350, 100], [550, 100], [550, 250], [350, 250]],
       riskScore: 0,
@@ -326,13 +326,13 @@ function createDefaultPlantState(): Partial<PlantState> {
       safetyDebt: 0,
       activeWorkers: [],
       activePermits: [],
-      sensors: ['sensor-5', 'sensor-6', 'sensor-7', 'sensor-8']
+      sensors: ['S-C2-GAS', 'S-C2-H2S', 'S-C2-CO', 'S-C2-TMP']
     },
     {
-      id: 'zone-3',
+      id: 'C3',
       name: 'Gas Holder',
       type: 'gas_holder',
-      adjacentZones: ['zone-1', 'zone-5'],
+      adjacentZones: ['C1', 'C5'],
       hazardClass: 'A',
       polygon: [[100, 300], [300, 300], [300, 450], [100, 450]],
       riskScore: 0,
@@ -340,13 +340,13 @@ function createDefaultPlantState(): Partial<PlantState> {
       safetyDebt: 0,
       activeWorkers: [],
       activePermits: [],
-      sensors: ['sensor-9', 'sensor-10', 'sensor-11']
+      sensors: ['S-C3-GAS', 'S-C3-H2S', 'S-C3-O2']
     },
     {
-      id: 'zone-4',
+      id: 'C4',
       name: 'Maintenance Bay',
       type: 'maintenance_bay',
-      adjacentZones: ['zone-2', 'zone-6'],
+      adjacentZones: ['C2', 'C6'],
       hazardClass: 'B',
       polygon: [[350, 300], [550, 300], [550, 450], [350, 450]],
       riskScore: 0,
@@ -354,13 +354,13 @@ function createDefaultPlantState(): Partial<PlantState> {
       safetyDebt: 0,
       activeWorkers: [],
       activePermits: [],
-      sensors: ['sensor-12', 'sensor-13']
+      sensors: ['S-C4-GAS', 'S-C4-TMP']
     },
     {
-      id: 'zone-5',
+      id: 'C5',
       name: 'Control Room',
       type: 'control_room',
-      adjacentZones: ['zone-3', 'zone-6'],
+      adjacentZones: ['C3', 'C6'],
       hazardClass: 'C',
       polygon: [[100, 500], [300, 500], [300, 600], [100, 600]],
       riskScore: 0,
@@ -368,13 +368,13 @@ function createDefaultPlantState(): Partial<PlantState> {
       safetyDebt: 0,
       activeWorkers: [],
       activePermits: [],
-      sensors: ['sensor-14']
+      sensors: ['S-C5-O2']
     },
     {
-      id: 'zone-6',
+      id: 'C6',
       name: 'Entry Point',
       type: 'entry_point',
-      adjacentZones: ['zone-4', 'zone-5'],
+      adjacentZones: ['C4', 'C5'],
       hazardClass: 'B',
       polygon: [[350, 500], [550, 500], [550, 600], [350, 600]],
       riskScore: 0,
@@ -382,50 +382,50 @@ function createDefaultPlantState(): Partial<PlantState> {
       safetyDebt: 0,
       activeWorkers: [],
       activePermits: [],
-      sensors: ['sensor-15', 'sensor-16']
+      sensors: ['S-C5-PRX', 'S-C6-FLW']
     }
   ];
 
   const sensors: Sensor[] = [
     // Zone 1 - Coke Oven Battery 1
-    { id: 'sensor-1', zoneId: 'zone-1', type: 'gas_pressure', currentValue: 1.2, unit: 'bar', normalRange: [1.0, 1.5], alarmThreshold: 2.0, status: 'normal', lastUpdated: new Date().toISOString() },
-    { id: 'sensor-2', zoneId: 'zone-1', type: 'h2s_concentration', currentValue: 5, unit: 'ppm', normalRange: [0, 10], alarmThreshold: 20, status: 'normal', lastUpdated: new Date().toISOString() },
-    { id: 'sensor-3', zoneId: 'zone-1', type: 'co_concentration', currentValue: 15, unit: 'ppm', normalRange: [0, 25], alarmThreshold: 50, status: 'normal', lastUpdated: new Date().toISOString() },
-    { id: 'sensor-4', zoneId: 'zone-1', type: 'temperature', currentValue: 45, unit: '°C', normalRange: [30, 60], alarmThreshold: 80, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C1-VOC', zoneId: 'C1', type: 'gas_pressure', currentValue: 1.2, unit: 'bar', normalRange: [1.0, 1.5], alarmThreshold: 2.0, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C1-H2S', zoneId: 'C1', type: 'h2s_concentration', currentValue: 5, unit: 'ppm', normalRange: [0, 10], alarmThreshold: 20, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C1-CO', zoneId: 'C1', type: 'co_concentration', currentValue: 15, unit: 'ppm', normalRange: [0, 25], alarmThreshold: 50, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C1-TMP', zoneId: 'C1', type: 'temperature', currentValue: 45, unit: '°C', normalRange: [30, 60], alarmThreshold: 80, status: 'normal', lastUpdated: new Date().toISOString() },
     // Zone 2 - Coke Oven Battery 2
-    { id: 'sensor-5', zoneId: 'zone-2', type: 'gas_pressure', currentValue: 1.1, unit: 'bar', normalRange: [1.0, 1.5], alarmThreshold: 2.0, status: 'normal', lastUpdated: new Date().toISOString() },
-    { id: 'sensor-6', zoneId: 'zone-2', type: 'h2s_concentration', currentValue: 3, unit: 'ppm', normalRange: [0, 10], alarmThreshold: 20, status: 'normal', lastUpdated: new Date().toISOString() },
-    { id: 'sensor-7', zoneId: 'zone-2', type: 'co_concentration', currentValue: 10, unit: 'ppm', normalRange: [0, 25], alarmThreshold: 50, status: 'normal', lastUpdated: new Date().toISOString() },
-    { id: 'sensor-8', zoneId: 'zone-2', type: 'temperature', currentValue: 42, unit: '°C', normalRange: [30, 60], alarmThreshold: 80, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C2-GAS', zoneId: 'C2', type: 'gas_pressure', currentValue: 1.1, unit: 'bar', normalRange: [1.0, 1.5], alarmThreshold: 2.0, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C2-H2S', zoneId: 'C2', type: 'h2s_concentration', currentValue: 3, unit: 'ppm', normalRange: [0, 10], alarmThreshold: 20, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C2-CO', zoneId: 'C2', type: 'co_concentration', currentValue: 10, unit: 'ppm', normalRange: [0, 25], alarmThreshold: 50, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C2-TMP', zoneId: 'C2', type: 'temperature', currentValue: 42, unit: '°C', normalRange: [30, 60], alarmThreshold: 80, status: 'normal', lastUpdated: new Date().toISOString() },
     // Zone 3 - Gas Holder
-    { id: 'sensor-9', zoneId: 'zone-3', type: 'gas_pressure', currentValue: 0.8, unit: 'bar', normalRange: [0.5, 1.2], alarmThreshold: 1.5, status: 'normal', lastUpdated: new Date().toISOString() },
-    { id: 'sensor-10', zoneId: 'zone-3', type: 'h2s_concentration', currentValue: 2, unit: 'ppm', normalRange: [0, 5], alarmThreshold: 15, status: 'normal', lastUpdated: new Date().toISOString() },
-    { id: 'sensor-11', zoneId: 'zone-3', type: 'oxygen_level', currentValue: 20.9, unit: '%', normalRange: [19.5, 23.5], alarmThreshold: 19.0, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C3-GAS', zoneId: 'C3', type: 'gas_pressure', currentValue: 0.8, unit: 'bar', normalRange: [0.5, 1.2], alarmThreshold: 1.5, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C3-H2S', zoneId: 'C3', type: 'h2s_concentration', currentValue: 2, unit: 'ppm', normalRange: [0, 5], alarmThreshold: 15, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C3-O2', zoneId: 'C3', type: 'oxygen_level', currentValue: 20.9, unit: '%', normalRange: [19.5, 23.5], alarmThreshold: 19.0, status: 'normal', lastUpdated: new Date().toISOString() },
     // Zone 4 - Maintenance Bay
-    { id: 'sensor-12', zoneId: 'zone-4', type: 'h2s_concentration', currentValue: 1, unit: 'ppm', normalRange: [0, 5], alarmThreshold: 10, status: 'normal', lastUpdated: new Date().toISOString() },
-    { id: 'sensor-13', zoneId: 'zone-4', type: 'oxygen_level', currentValue: 20.9, unit: '%', normalRange: [19.5, 23.5], alarmThreshold: 19.0, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C4-GAS', zoneId: 'C4', type: 'h2s_concentration', currentValue: 1, unit: 'ppm', normalRange: [0, 5], alarmThreshold: 10, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C4-TMP', zoneId: 'C4', type: 'oxygen_level', currentValue: 20.9, unit: '%', normalRange: [19.5, 23.5], alarmThreshold: 19.0, status: 'normal', lastUpdated: new Date().toISOString() },
     // Zone 5 - Control Room
-    { id: 'sensor-14', zoneId: 'zone-5', type: 'oxygen_level', currentValue: 20.9, unit: '%', normalRange: [19.5, 23.5], alarmThreshold: 19.0, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C5-O2', zoneId: 'C5', type: 'oxygen_level', currentValue: 20.9, unit: '%', normalRange: [19.5, 23.5], alarmThreshold: 19.0, status: 'normal', lastUpdated: new Date().toISOString() },
     // Zone 6 - Entry Point
-    { id: 'sensor-15', zoneId: 'zone-6', type: 'proximity', currentValue: 0, unit: 'm', normalRange: [0, 2], alarmThreshold: 0.5, status: 'normal', lastUpdated: new Date().toISOString() },
-    { id: 'sensor-16', zoneId: 'zone-6', type: 'flow_rate', currentValue: 100, unit: 'm³/h', normalRange: [80, 120], alarmThreshold: 150, status: 'normal', lastUpdated: new Date().toISOString() }
+    { id: 'S-C5-PRX', zoneId: 'C6', type: 'proximity', currentValue: 0, unit: 'm', normalRange: [0, 2], alarmThreshold: 0.5, status: 'normal', lastUpdated: new Date().toISOString() },
+    { id: 'S-C6-FLW', zoneId: 'C6', type: 'flow_rate', currentValue: 100, unit: 'm³/h', normalRange: [80, 120], alarmThreshold: 150, status: 'normal', lastUpdated: new Date().toISOString() }
   ];
 
   const workers: Worker[] = [
-    { id: 'worker-1', name: 'Rajesh Kumar', role: 'Operator', currentZoneId: 'zone-1', status: 'active', position: { x: 150, y: 150 }, shift: 'on_shift' },
-    { id: 'worker-2', name: 'Priya Sharma', role: 'Supervisor', currentZoneId: 'zone-2', status: 'active', position: { x: 400, y: 150 }, shift: 'on_shift' },
-    { id: 'worker-3', name: 'Amit Singh', role: 'Maintenance', currentZoneId: 'zone-4', status: 'active', position: { x: 400, y: 350 }, shift: 'on_shift' },
-    { id: 'worker-4', name: 'Sunita Devi', role: 'Control Room Operator', currentZoneId: 'zone-5', status: 'active', position: { x: 150, y: 550 }, shift: 'on_shift' },
-    { id: 'worker-5', name: 'Vikram Patel', role: 'Safety Officer', currentZoneId: 'zone-6', status: 'active', position: { x: 400, y: 550 }, shift: 'on_shift' },
-    { id: 'worker-6', name: 'Deepak Verma', role: 'Operator', currentZoneId: 'zone-1', status: 'active', position: { x: 200, y: 200 }, shift: 'incoming' },
-    { id: 'worker-7', name: 'Meera Joshi', role: 'Operator', currentZoneId: 'zone-3', status: 'active', position: { x: 150, y: 350 }, shift: 'outgoing' }
+    { id: 'worker-1', name: 'Rajesh Kumar', role: 'Operator', currentZoneId: 'C1', status: 'active', position: { x: 150, y: 150 }, shift: 'on_shift' },
+    { id: 'worker-2', name: 'Priya Sharma', role: 'Supervisor', currentZoneId: 'C2', status: 'active', position: { x: 400, y: 150 }, shift: 'on_shift' },
+    { id: 'worker-3', name: 'Amit Singh', role: 'Maintenance', currentZoneId: 'C4', status: 'active', position: { x: 400, y: 350 }, shift: 'on_shift' },
+    { id: 'worker-4', name: 'Sunita Devi', role: 'Control Room Operator', currentZoneId: 'C5', status: 'active', position: { x: 150, y: 550 }, shift: 'on_shift' },
+    { id: 'worker-5', name: 'Vikram Patel', role: 'Safety Officer', currentZoneId: 'C6', status: 'active', position: { x: 400, y: 550 }, shift: 'on_shift' },
+    { id: 'worker-6', name: 'Deepak Verma', role: 'Operator', currentZoneId: 'C1', status: 'active', position: { x: 200, y: 200 }, shift: 'incoming' },
+    { id: 'worker-7', name: 'Meera Joshi', role: 'Operator', currentZoneId: 'C3', status: 'active', position: { x: 150, y: 350 }, shift: 'outgoing' }
   ];
 
   const permits: Permit[] = [
     {
       id: 'permit-1',
       type: 'hot_work',
-      zoneId: 'zone-1',
+      zoneId: 'C1',
       requestedBy: 'worker-1',
       validFrom: new Date(Date.now() - 3600000).toISOString(),
       validUntil: new Date(Date.now() + 7200000).toISOString(),
@@ -435,7 +435,7 @@ function createDefaultPlantState(): Partial<PlantState> {
     {
       id: 'permit-2',
       type: 'confined_space_entry',
-      zoneId: 'zone-3',
+      zoneId: 'C3',
       requestedBy: 'worker-3',
       validFrom: new Date(Date.now() - 1800000).toISOString(),
       validUntil: new Date(Date.now() + 5400000).toISOString(),
@@ -445,7 +445,7 @@ function createDefaultPlantState(): Partial<PlantState> {
     {
       id: 'permit-3',
       type: 'electrical_isolation',
-      zoneId: 'zone-4',
+      zoneId: 'C4',
       requestedBy: 'worker-3',
       validFrom: new Date(Date.now() - 7200000).toISOString(),
       validUntil: new Date(Date.now() + 10800000).toISOString(),

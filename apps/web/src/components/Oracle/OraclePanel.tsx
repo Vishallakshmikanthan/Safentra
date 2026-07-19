@@ -3,6 +3,27 @@ import { usePlantStore } from '../../store/plantStore';
 
 export const OraclePanel: React.FC = () => {
   const oracleState = usePlantStore(state => state.oracleState);
+  const [question, setQuestion] = React.useState('');
+  const [asking, setAsking] = React.useState(false);
+
+  const askOracle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!question.trim()) return;
+    setAsking(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+      await fetch(`${apiUrl}/api/oracle/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question })
+      });
+      setQuestion('');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAsking(false);
+    }
+  };
 
   if (!oracleState.isActive) {
     return (
@@ -137,6 +158,25 @@ export const OraclePanel: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+      <div className="bg-surface p-4 border-t border-outline/30 shadow-sm mt-4">
+        <form onSubmit={askOracle} className="flex gap-4">
+          <input 
+            type="text" 
+            value={question}
+            onChange={e => setQuestion(e.target.value)}
+            placeholder="Ask ORACLE a question about the current situation..."
+            className="flex-1 bg-background border border-primary/50 text-on-surface p-3 font-body-md focus:outline-none focus:border-primary"
+            disabled={asking}
+          />
+          <button 
+            type="submit" 
+            disabled={asking}
+            className="bg-primary text-on-primary px-6 font-label-caps uppercase hover:bg-primary/90 disabled:opacity-50"
+          >
+            {asking ? 'Analyzing...' : 'Ask ORACLE'}
+          </button>
+        </form>
       </div>
     </div>
   );

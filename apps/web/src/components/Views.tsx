@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { usePlantStore } from '../store/plantStore';
 
 export const PlaceholderView: React.FC<{ title: string; icon: string }> = ({ title, icon }) => (
@@ -13,11 +13,45 @@ export const PlaceholderView: React.FC<{ title: string; icon: string }> = ({ tit
 
 export const PermitsView: React.FC = () => {
   const permits = usePlantStore(state => state.permits);
+  const [type, setType] = useState('hot_work');
+  const [zoneId, setZoneId] = useState('');
+  const [requestedBy, setRequestedBy] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3001';
+      const res = await fetch(`${apiUrl}/api/permits`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, zoneId, requestedBy })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create permit');
+      setSuccess(`Permit ${data.id} requested successfully!`);
+      setZoneId('');
+      setRequestedBy('');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   return (
     <div className="flex-1 p-6 overflow-auto bg-background text-on-surface">
-      <h2 className="font-headline-md text-headline-md mb-6 uppercase text-primary border-b border-primary pb-2">Active Work Permits</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="flex justify-between items-end border-b border-primary pb-2 mb-6">
+        <h2 className="font-headline-md text-headline-md uppercase text-primary m-0">Active Work Permits</h2>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-max">
         {Object.values(permits).map(permit => (
           <div key={permit.id} className="bg-surface border border-primary p-4 shadow-sm">
             <div className="flex justify-between items-center mb-4">
@@ -30,6 +64,38 @@ export const PermitsView: React.FC = () => {
           </div>
         ))}
         {Object.values(permits).length === 0 && <p className="text-on-surface-variant italic">No active permits.</p>}
+        </div>
+
+        <div className="bg-surface border border-outline/30 p-6 shadow-sm self-start">
+          <h3 className="font-headline-sm uppercase text-primary mb-4 flex items-center gap-2">
+            <span className="material-symbols-outlined">add_box</span> New Permit Request
+          </h3>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <label className="block font-label-md text-on-surface-variant uppercase mb-1">Permit Type</label>
+              <select value={type} onChange={e => setType(e.target.value)} className="w-full bg-background border border-primary/50 text-on-surface p-2 font-body-md focus:outline-none focus:border-primary">
+                <option value="hot_work">Hot Work</option>
+                <option value="confined_space_entry">Confined Space Entry</option>
+                <option value="electrical_isolation">Electrical Isolation</option>
+                <option value="height_work">Height Work</option>
+                <option value="excavation">Excavation</option>
+              </select>
+            </div>
+            <div>
+              <label className="block font-label-md text-on-surface-variant uppercase mb-1">Target Zone ID</label>
+              <input type="text" required value={zoneId} onChange={e => setZoneId(e.target.value)} placeholder="e.g. C1" className="w-full bg-background border border-primary/50 text-on-surface p-2 font-body-md focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+              <label className="block font-label-md text-on-surface-variant uppercase mb-1">Requested By</label>
+              <input type="text" required value={requestedBy} onChange={e => setRequestedBy(e.target.value)} placeholder="e.g. worker-1" className="w-full bg-background border border-primary/50 text-on-surface p-2 font-body-md focus:outline-none focus:border-primary" />
+            </div>
+            <button type="submit" disabled={loading} className="mt-2 bg-primary text-on-primary py-2 px-4 font-label-lg uppercase tracking-wider hover:bg-primary/90 disabled:opacity-50">
+              {loading ? 'Submitting...' : 'Submit Request'}
+            </button>
+          </form>
+          {error && <div className="mt-4 p-2 border border-error bg-error/10 text-error font-body-sm">{error}</div>}
+          {success && <div className="mt-4 p-2 border border-primary bg-primary/10 text-primary font-body-sm">{success}</div>}
+        </div>
       </div>
     </div>
   );

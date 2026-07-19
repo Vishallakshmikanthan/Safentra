@@ -691,10 +691,10 @@ export class PlantWebSocketServer {
 
   getChaosPresets() {
     return [
-      { id: 'vizag_pattern', label: 'Vizag Pattern', type: 'gas_leak', zoneId: 'zone-1', severity: 'critical', duration: 90, parameters: { gasType: 'h2s_concentration', value: 14.8 } },
-      { id: 'oxygen_depletion', label: 'O2 Depletion', type: 'sensor_spike', zoneId: 'zone-3', severity: 'high', duration: 60, parameters: { sensorType: 'oxygen_level', value: 18.6 } },
-      { id: 'permit_conflict', label: 'Permit Conflict', type: 'permit_conflict', zoneId: 'zone-1', severity: 'high', duration: 60, parameters: {} },
-      { id: 'sensor_failure', label: 'Sensor Failure', type: 'sensor_failure', zoneId: 'zone-1', severity: 'medium', duration: 45, parameters: { sensorType: 'gas_pressure' } }
+      { id: 'vizag_pattern', label: 'Vizag Pattern', type: 'gas_leak', zoneId: 'C1', severity: 'critical', duration: 90, parameters: { gasType: 'h2s_concentration', value: 14.8 } },
+      { id: 'oxygen_depletion', label: 'O2 Depletion', type: 'sensor_spike', zoneId: 'C3', severity: 'high', duration: 60, parameters: { sensorType: 'oxygen_level', value: 18.6 } },
+      { id: 'permit_conflict', label: 'Permit Conflict', type: 'permit_conflict', zoneId: 'C1', severity: 'high', duration: 60, parameters: {} },
+      { id: 'sensor_failure', label: 'Sensor Failure', type: 'sensor_failure', zoneId: 'C1', severity: 'medium', duration: 45, parameters: { sensorType: 'gas_pressure' } }
     ];
   }
 
