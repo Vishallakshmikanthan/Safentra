@@ -7,9 +7,9 @@ const express_1 = __importDefault(require("express"));
 const http_1 = require("http");
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const PlantGraph_1 = require("./graph/PlantGraph");
-const PlantWebSocketServer_1 = require("./websocket/PlantWebSocketServer");
-const SensorSimulator_1 = require("./simulation/SensorSimulator");
+const PlantGraph_js_1 = require("./graph/PlantGraph.js");
+const PlantWebSocketServer_js_1 = require("./websocket/PlantWebSocketServer.js");
+const SensorSimulator_js_1 = require("./simulation/SensorSimulator.js");
 const uuid_1 = require("uuid");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -30,14 +30,14 @@ app.get('/health', (req, res) => {
 });
 // Initialize plant graph with default coke oven plant configuration
 const initialState = createDefaultPlantState();
-const graph = new PlantGraph_1.PlantGraph(initialState);
+const graph = new PlantGraph_js_1.PlantGraph(initialState);
 // Initialize WebSocket server
-const wsServer = new PlantWebSocketServer_1.PlantWebSocketServer(server, graph);
+const wsServer = new PlantWebSocketServer_js_1.PlantWebSocketServer(server, graph);
 wsServer.startTickLoop();
 // ─── Sensor Simulator ────────────────────────────────────────────────────────
 // Continuous sensor simulation: runs a 2s tick loop, drives all PlantGraph
 // sensors with realistic noise, and autonomously fires danger events.
-const sensorSimulator = new SensorSimulator_1.SensorSimulator(graph);
+const sensorSimulator = new SensorSimulator_js_1.SensorSimulator(graph);
 sensorSimulator.start();
 // Every simulator tick: update sensors → broadcast full state immediately
 sensorSimulator.on('tick', () => {
@@ -63,6 +63,10 @@ sensorSimulator.on('mode_change', (mode) => {
         },
         timestamp: new Date().toISOString()
     });
+});
+// Broadcast autonomous agent activity
+sensorSimulator.on('agent_activity', (message) => {
+    wsServer.broadcastMessage(message);
 });
 // ─────────────────────────────────────────────────────────────────────────────
 // REST API Routes

@@ -314,13 +314,28 @@ class SensorSimulator extends events_1.EventEmitter {
     checkDangerEvents(elapsedSeconds) {
         if (!this.dangerMode)
             return;
-        // T+8s: Shift changeover
+        // T+8s: Shift changeover & Chaos injection
         if (elapsedSeconds >= 8 && !this.dangerEventsEmitted.has('shift')) {
             this.dangerEventsEmitted.add('shift');
             this.graph.setShiftChangeover(true);
-            console.log('[SensorSimulator] T+8s: Shift changeover activated');
+            this.emit('agent_activity', {
+                type: 'chaos_update',
+                payload: {
+                    activeInjections: [{
+                            id: 'chaos-1',
+                            type: 'sensor_failure',
+                            zoneId: 'zone-1',
+                            severity: 'low',
+                            injectedAt: new Date().toISOString(),
+                            expiresAt: new Date(Date.now() + 60000).toISOString()
+                        }],
+                    history: []
+                },
+                timestamp: new Date().toISOString()
+            });
+            console.log('[SensorSimulator] T+8s: Shift changeover & Chaos activated');
         }
-        // T+18s: Hot work permit in zone-1 (adjacent to main danger zone)
+        // T+18s: Hot work permit in zone-1 & Forge Candidate
         if (elapsedSeconds >= 18 && !this.dangerEventsEmitted.has('permit')) {
             this.dangerEventsEmitted.add('permit');
             this.graph.addPermit({
@@ -333,13 +348,53 @@ class SensorSimulator extends events_1.EventEmitter {
                 status: 'active',
                 regulatoryRef: 'OISD-GDN-169 Clause 6.1'
             });
-            console.log('[SensorSimulator] T+18s: Hot work permit AUTO-HW-001 issued for zone-1');
+            this.emit('agent_activity', {
+                type: 'forge_candidate',
+                payload: {
+                    candidates: [{
+                            pattern: {
+                                id: 'pat-cand-01',
+                                name: 'Elevated Gas + Hot Work',
+                                description: 'Welding near slightly elevated H2S levels during shift change.',
+                                conditions: ['H2S > 10ppm', 'Hot Work Active', 'Shift Change'],
+                                frequency: 3,
+                                lastSeen: new Date().toISOString(),
+                                status: 'candidate',
+                                sourceReports: []
+                            },
+                            confidence: 0.82,
+                            suggestedPatternId: 'vizag-early-warning',
+                            matchedReports: []
+                        }],
+                    approvalHistory: [],
+                    rejectionHistory: []
+                },
+                timestamp: new Date().toISOString()
+            });
+            console.log('[SensorSimulator] T+18s: Hot work permit AUTO-HW-001 issued for zone-1 & Forge candidate created');
         }
-        // T+28s: Worker 1 enters confined space
+        // T+28s: Worker 1 enters confined space & Oracle springs to life
         if (elapsedSeconds >= 28 && !this.dangerEventsEmitted.has('confined-1')) {
             this.dangerEventsEmitted.add('confined-1');
             this.graph.moveWorker('worker-1', 'zone-1', { x: 155, y: 140 }, 'in_confined_space');
-            console.log('[SensorSimulator] T+28s: worker-1 entered confined space in zone-1');
+            this.emit('agent_activity', {
+                type: 'oracle_update',
+                payload: {
+                    isActive: true,
+                    recommendations: ['Halt hot work in Zone 1 immediately', 'Evacuate confined space'],
+                    regulations: ['OISD-STD-105 Clause 4.2: Confined space entry during concurrent hot work'],
+                    historicalIncidents: ['Bhilai Steel Plant Gas Leak (2014)'],
+                    explanation: 'Sensors show H2S rising rapidly while a worker is in a confined space and a hot work permit is active. This creates a severe compound risk.',
+                    affectedSensors: ['sensor-2', 'sensor-3'],
+                    affectedPermits: ['AUTO-HW-001'],
+                    workersAtRisk: ['worker-1'],
+                    confidence: 0.94,
+                    sources: ['Live telemetry', 'Permit ledger'],
+                    conversationHistory: [{ role: 'assistant', text: 'Warning: I am tracking a rapidly developing compound risk in Coke Oven Battery 1.' }]
+                },
+                timestamp: new Date().toISOString()
+            });
+            console.log('[SensorSimulator] T+28s: worker-1 entered confined space in zone-1 & Oracle activated');
         }
         // T+33s: Worker 2 enters confined space
         if (elapsedSeconds >= 33 && !this.dangerEventsEmitted.has('confined-2')) {
@@ -347,11 +402,37 @@ class SensorSimulator extends events_1.EventEmitter {
             this.graph.moveWorker('worker-2', 'zone-2', { x: 160, y: 145 }, 'in_confined_space');
             console.log('[SensorSimulator] T+33s: worker-2 entered confined space in zone-2');
         }
-        // T+38s: Worker 3 — Pattern 12 fires after this tick
+        // T+38s: Worker 3 — Pattern 12 fires after this tick & Blaze triggers
         if (elapsedSeconds >= 38 && !this.dangerEventsEmitted.has('confined-3')) {
             this.dangerEventsEmitted.add('confined-3');
             this.graph.moveWorker('worker-3', 'zone-3', { x: 158, y: 150 }, 'in_confined_space');
-            console.log('[SensorSimulator] T+38s: worker-3 entered confined space — VIZAG PATTERN CONDITIONS MET');
+            this.emit('agent_activity', {
+                type: 'blaze_update',
+                payload: {
+                    isActive: true,
+                    incidentTimeline: [
+                        { time: new Date(Date.now() - 30000).toISOString(), description: 'Anomalous gas readings detected', status: 'completed' },
+                        { time: new Date(Date.now() - 20000).toISOString(), description: 'Hot work permit activated concurrently', status: 'completed' },
+                        { time: new Date(Date.now() - 10000).toISOString(), description: 'Workers entered confined space', status: 'completed' },
+                        { time: new Date().toISOString(), description: 'Pattern 12 triggered - Evacuation initiated', status: 'in_progress' }
+                    ],
+                    evacuationStatus: 'ordered',
+                    emergencyContactsNotified: ['Plant Manager', 'Safety Officer (On Duty)', 'Fire Brigade'],
+                    affectedWorkers: ['worker-1', 'worker-2', 'worker-3'],
+                    assemblyPoints: [{ id: 'AP-1', name: 'North Gate', capacity: 50, currentCount: 12 }],
+                    incidentReport: null,
+                    actionChecklist: [
+                        { id: 'a1', description: 'Sound site-wide alarm', completed: true },
+                        { id: 'a2', description: 'Revoke all active permits in Zone 1', completed: false },
+                        { id: 'a3', description: 'Dispatch rescue team to confined space', completed: false }
+                    ],
+                    resourceAllocation: [{ resource: 'Ambulance 1', status: 'en_route' }, { resource: 'Hazmat Team Alpha', status: 'dispatched' }],
+                    responseStatus: 'ESCALATED TO LEVEL 3',
+                    countdownTimer: 300
+                },
+                timestamp: new Date().toISOString()
+            });
+            console.log('[SensorSimulator] T+38s: worker-3 entered confined space — VIZAG PATTERN CONDITIONS MET & Blaze activated');
         }
     }
     // ─── Main tick ───────────────────────────────────────────────────────────────
@@ -466,8 +547,13 @@ class SensorSimulator extends events_1.EventEmitter {
             if (permit) {
                 this.graph.updatePermitStatus('AUTO-HW-001', 'revoked');
             }
+            // Reset AI Agents
+            this.emit('agent_activity', { type: 'oracle_update', payload: { isActive: false }, timestamp: new Date().toISOString() });
+            this.emit('agent_activity', { type: 'blaze_update', payload: { isActive: false }, timestamp: new Date().toISOString() });
+            this.emit('agent_activity', { type: 'forge_candidate', payload: { candidates: [], approvalHistory: [], rejectionHistory: [] }, timestamp: new Date().toISOString() });
+            this.emit('agent_activity', { type: 'chaos_update', payload: { activeInjections: [], history: [] }, timestamp: new Date().toISOString() });
             this.emit('mode_change', 'normal');
-            console.log('[SensorSimulator] Normal mode — sensors returning to baseline');
+            console.log('[SensorSimulator] Normal mode — sensors & agents returning to baseline');
         }
     }
     isDangerMode() {

@@ -89,7 +89,7 @@ export interface PlantState {
 }
 
 export interface WebSocketMessage {
-  type: 'state_update' | 'risk_event' | 'alert' | 'permit_blocked' | 'permit_approved' | 'worker_moved' | 'sensor_update' | 'shift_changeover' | 'safety_debt_update' | 'chaos_injected' | 'simulation_tick' | 'simulation_status' | 'oracle_update' | 'forge_candidate' | 'blaze_update' | 'chaos_update' | 'agent_activity' | 'ledger_update';
+  type: 'state_update' | 'risk_event' | 'alert' | 'permit_blocked' | 'permit_approved' | 'worker_moved' | 'sensor_update' | 'shift_changeover' | 'safety_debt_update' | 'chaos_injected' | 'simulation_tick' | 'simulation_status' | 'oracle_update' | 'oracle_response' | 'forge_candidate' | 'blaze_update' | 'blaze_triggered' | 'chaos_update' | 'agent_activity' | 'ledger_update' | 'ledger_entry';
   payload: unknown;
   timestamp: string;
 }
@@ -118,7 +118,7 @@ export interface CandidatePattern {
 export interface LedgerEntry {
   index: number;
   timestamp: string;
-  type: 'risk_event' | 'permit_action' | 'worker_movement' | 'sensor_reading' | 'alert' | 'chaos_injection' | 'simulation_tick' | 'permit_blocked' | 'permit_approved' | 'shift_changeover' | 'safety_debt_update';
+  type: 'risk_event' | 'permit_action' | 'worker_movement' | 'sensor_reading' | 'alert' | 'chaos_injection' | 'chaos_reset' | 'simulation_tick' | 'permit_blocked' | 'permit_approved' | 'shift_changeover' | 'safety_debt_update' | 'oracle_response' | 'forge_candidate' | 'forge_action' | 'blaze_triggered';
   payload: unknown;
   previousHash: string;
   hash: string;
@@ -292,4 +292,52 @@ export interface BlazeState {
   resourceAllocation: { resource: string; status: 'dispatched' | 'arrived' | 'en_route' }[];
   responseStatus: string;
   countdownTimer: number | null;
-}
+  response?: BlazeResponse | null;
+}
+
+export interface EvacuationStep {
+  zone: string;
+  priority: number;
+  headcount: number;
+  instruction: string;
+  exitRoute: string;
+}
+
+export interface AlertMessage {
+  role: string;
+  priority: number;
+  message: string;
+  contactMethod: string;
+}
+
+export interface BlazeResponse {
+  incidentId: string;
+  triggeredAt: string;
+  triggerZone: string;
+  riskScore: number;
+  patternTriggered: string;
+  evacuationSequence: EvacuationStep[];
+  alertMessages: AlertMessage[];
+  incidentReport: string;
+  immediateActions: string[];
+  evidenceSnapshot: {
+    capturedAt: string;
+    sensorReadings: Array<{ sensorId: string; type: string; value: number; unit: string; status: string; zone: string }>;
+    activePermits: Array<{ id: string; type: string; zone: string; requestedBy: string }>;
+    workersPresent: Array<{ id: string; name: string; zone: string; status: string; role: string }>;
+    shiftChangeover: boolean;
+  };
+}
+
+export interface OracleIntelligenceResponse {
+  answer: string;
+  regulatoryCitation: string;
+  historicalMatch: string;
+  immediateRisk: string;
+  recommendedActions: string[];
+  sources: string[];
+  confidence: number;
+  autoQueried: boolean;
+  plantSnapshot: PlantState;
+  timestamp: string;
+}

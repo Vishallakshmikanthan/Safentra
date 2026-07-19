@@ -148,4 +148,39 @@ export interface BlazeState {
   resourceAllocation: { resource: string; status: 'dispatched' | 'arrived' | 'en_route' }[];
   responseStatus: string;
   countdownTimer: number | null;
+  response?: BlazeResponse | null;
+}
+
+export interface EvacuationStep {
+  zone: string;
+  priority: number;
+  headcount: number;
+  instruction: string;
+  exitRoute: string;
+}
+
+export interface AlertMessage {
+  role: string;
+  priority: number;
+  message: string;
+  contactMethod: string;
+}
+
+export interface BlazeResponse {
+  incidentId: string;
+  triggeredAt: string;
+  triggerZone: string;
+  riskScore: number;
+  patternTriggered: string;
+  evacuationSequence: EvacuationStep[];
+  alertMessages: AlertMessage[];
+  incidentReport: string;
+  immediateActions: string[];
+  evidenceSnapshot: {
+    capturedAt: string;
+    sensorReadings: Array<{ sensorId: string; type: string; value: number; unit: string; status: string; zone: string }>;
+    activePermits: Array<{ id: string; type: string; zone: string; requestedBy: string }>;
+    workersPresent: Array<{ id: string; name: string; zone: string; status: string; role: string }>;
+    shiftChangeover: boolean;
+  };
 }

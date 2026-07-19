@@ -16,6 +16,17 @@ export class PlantGraph {
     }
   }
 
+  reset(initialState: Partial<PlantState>): void {
+    this.zones.clear();
+    this.sensors.clear();
+    this.workers.clear();
+    this.permits.clear();
+    this.riskEvents = [];
+    this.alerts = [];
+    this.shiftChangeover = false;
+    this.initializeFromState(initialState);
+  }
+
   private initializeFromState(state: Partial<PlantState>): void {
     if (state.zones) {
       Object.values(state.zones).forEach(zone => this.zones.set(zone.id, zone));

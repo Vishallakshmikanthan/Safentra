@@ -6,7 +6,10 @@ import { PatternMatcher } from '../graph/PatternMatcher';
 import { RiskScorer } from '../graph/RiskScorer';
 import { SafetyDebt } from '../graph/SafetyDebt';
 import { HashChain } from '../ledger/HashChain';
-import { PlantState, WebSocketMessage, WebSocketClient, Zone, Sensor, Worker, Permit, RiskEvent, Alert, ChaosInjection, SimulationState, ChaosState, AgentStatus, SimulationEvent } from '@safentra/types';
+import { BlazeAgent } from '../agents/blaze';
+import { ForgeAgent } from '../agents/forge';
+import { OracleAgent } from '../agents/oracle';
+import { PlantState, WebSocketMessage, WebSocketClient, Zone, Sensor, Worker, Permit, RiskEvent, Alert, ChaosInjection, SimulationState, ChaosState, AgentStatus, SimulationEvent, ForgeSubmission } from '@safentra/types';
 
 export class PlantWebSocketServer {
   private wss: WebSocketServer;
@@ -32,12 +35,21 @@ export class PlantWebSocketServer {
   private agentStatuses: Map<string, AgentStatus> = new Map();
   private readonly ledger = new HashChain();
   private readonly activeRiskSignatures = new Map<string, string>();
+  private readonly criticalTickCounts = new Map<string, number>();
+  private readonly blaze: BlazeAgent;
+  private readonly oracle: OracleAgent;
+  private readonly forge: ForgeAgent;
+  private autoOracleQueried = false;
+  private autoBlazeFired = false;
 
   constructor(server: any, graph: PlantGraph) {
     this.graph = graph;
     this.patternMatcher = new PatternMatcher(graph);
     this.riskScorer = new RiskScorer();
     this.safetyDebt = new SafetyDebt();
+    this.blaze = new BlazeAgent(this.graph, this.ledger);
+    this.oracle = new OracleAgent(this.graph, this.ledger);
+    this.forge = new ForgeAgent(this.ledger);
 
     this.wss = new WebSocketServer({ server });
     this.setupWebSocketServer();
@@ -202,6 +214,12 @@ export class PlantWebSocketServer {
       payload: injection,
       timestamp: new Date().toISOString()
     });
+    this.broadcast({
+      type: 'chaos_update',
+      payload: this.chaosState,
+      timestamp: new Date().toISOString()
+    });
+    this.broadcastState();
 
     // Schedule removal
     setTimeout(() => {
@@ -369,13 +387,12 @@ export class PlantWebSocketServer {
 
   private async handleOracleQuery(clientId: string, payload: { question: string; context?: any }): Promise<void> {
     this.updateAgentStatus('ORACLE', 'running');
-    // Simulate Oracle RAG response
-    const response = await this.simulateOracleResponse(payload.question, payload.context);
+    const response = this.oracle.query(payload.question, false);
     this.updateAgentStatus('ORACLE', 'idle', response);
     
     this.sendToClient(clientId, {
-      type: 'alert',
-      payload: { type: 'oracle_response', ...response },
+      type: 'oracle_response',
+      payload: response,
       timestamp: new Date().toISOString()
     });
   }
@@ -393,9 +410,13 @@ export class PlantWebSocketServer {
 
   private handleForgeSubmission(payload: any): void {
     this.updateAgentStatus('FORGE', 'running');
-    // Process near-miss report
-    console.log('FORGE submission:', payload);
-    this.updateAgentStatus('FORGE', 'idle', { patternCandidate: 'New pattern detected from near-miss cluster' });
+    const candidate = this.forge.submit({
+      description: String(payload.description ?? ''),
+      zoneId: String(payload.zoneId ?? ''),
+      severity: (payload.severity ?? 'near_miss') as ForgeSubmission['severity'],
+      tags: Array.isArray(payload.tags) ? payload.tags.map(String) : []
+    }, message => this.broadcast(message));
+    this.updateAgentStatus('FORGE', 'idle', candidate);
   }
 
   private handleCheckpointScan(clientId: string, payload: any): void {
@@ -470,6 +491,7 @@ export class PlantWebSocketServer {
       // Emit only when the active compound-risk set changes. Emitting an event on
       // every tick would flood operators and make the audit trail unusable.
       const riskEvent = this.riskScorer.createRiskEvent(zone, zonePatterns);
+      this.handleAutomaticAgents(zone.id, riskScore, riskEvent);
       const signature = zonePatterns.filter(p => p.matched).map(p => p.patternId).sort().join('|');
       if (riskEvent && signature && this.activeRiskSignatures.get(zone.id) !== signature) {
         this.activeRiskSignatures.set(zone.id, signature);
@@ -507,6 +529,33 @@ export class PlantWebSocketServer {
       this.simulationState.eventIndex++;
     }
     this.simulationState.currentTime += this.tickRate * speed;
+  }
+
+  private handleAutomaticAgents(zoneId: string, riskScore: number, riskEvent: RiskEvent | null): void {
+    const eventScore = riskEvent?.riskScore ?? 0;
+    const isCritical = Boolean(riskEvent) && (riskScore >= 0.85 || eventScore >= 0.85 || riskEvent?.severity === 'critical');
+
+    if (!isCritical) {
+      this.criticalTickCounts.delete(zoneId);
+      return;
+    }
+
+    const count = (this.criticalTickCounts.get(zoneId) ?? 0) + 1;
+    this.criticalTickCounts.set(zoneId, count);
+
+    if (!this.autoOracleQueried) {
+      this.autoOracleQueried = true;
+      this.updateAgentStatus('ORACLE', 'running');
+      const response = this.oracle.autoQuery(message => this.broadcast(message));
+      this.updateAgentStatus('ORACLE', 'idle', response);
+    }
+
+    if (!this.autoBlazeFired && count >= 3 && riskEvent) {
+      this.autoBlazeFired = true;
+      this.updateAgentStatus('BLAZE', 'running');
+      const response = this.blaze.trigger(riskEvent, message => this.broadcast(message));
+      this.updateAgentStatus('BLAZE', 'idle', response);
+    }
   }
 
   private processSimulationEvent(event: any): void {
@@ -593,6 +642,71 @@ export class PlantWebSocketServer {
 
   getLedger(): HashChain {
     return this.ledger;
+  }
+
+  resetAgentSessions(): void {
+    this.autoOracleQueried = false;
+    this.autoBlazeFired = false;
+    this.criticalTickCounts.clear();
+    this.activeRiskSignatures.clear();
+    this.blaze.resetSession();
+    this.oracle.resetSession();
+    this.broadcast({ type: 'blaze_update', payload: { isActive: false, response: null }, timestamp: new Date().toISOString() });
+    this.broadcast({ type: 'oracle_update', payload: { isActive: false }, timestamp: new Date().toISOString() });
+  }
+
+  queryOracle(question: string, autoQueried = false) {
+    this.updateAgentStatus('ORACLE', 'running');
+    const response = this.oracle.query(question, autoQueried, message => this.broadcast(message));
+    this.updateAgentStatus('ORACLE', 'idle', response);
+    return response;
+  }
+
+  submitForge(payload: { description: string; zoneId: string; severity: ForgeSubmission['severity']; tags: string[] }) {
+    this.updateAgentStatus('FORGE', 'running');
+    const candidate = this.forge.submit(payload, message => this.broadcast(message));
+    this.updateAgentStatus('FORGE', 'idle', candidate);
+    return candidate;
+  }
+
+  getForgeCandidates() {
+    return this.forge.list();
+  }
+
+  approveForgeCandidate(id: string) {
+    const candidate = this.forge.approve(id);
+    if (candidate) {
+      this.broadcast({ type: 'forge_candidate', payload: { candidates: [candidate], approvalHistory: [candidate], rejectionHistory: [] }, timestamp: new Date().toISOString() });
+    }
+    return candidate;
+  }
+
+  rejectForgeCandidate(id: string) {
+    const candidate = this.forge.reject(id);
+    if (candidate) {
+      this.broadcast({ type: 'forge_candidate', payload: { candidates: [candidate], approvalHistory: [], rejectionHistory: [candidate] }, timestamp: new Date().toISOString() });
+    }
+    return candidate;
+  }
+
+  getChaosPresets() {
+    return [
+      { id: 'vizag_pattern', label: 'Vizag Pattern', type: 'gas_leak', zoneId: 'zone-1', severity: 'critical', duration: 90, parameters: { gasType: 'h2s_concentration', value: 14.8 } },
+      { id: 'oxygen_depletion', label: 'O2 Depletion', type: 'sensor_spike', zoneId: 'zone-3', severity: 'high', duration: 60, parameters: { sensorType: 'oxygen_level', value: 18.6 } },
+      { id: 'permit_conflict', label: 'Permit Conflict', type: 'permit_conflict', zoneId: 'zone-1', severity: 'high', duration: 60, parameters: {} },
+      { id: 'sensor_failure', label: 'Sensor Failure', type: 'sensor_failure', zoneId: 'zone-1', severity: 'medium', duration: 45, parameters: { sensorType: 'gas_pressure' } }
+    ];
+  }
+
+  resetPlant(initialState: Partial<PlantState>): void {
+    this.chaosState.activeInjections = [];
+    this.chaosState.history = [];
+    this.resetAgentSessions();
+    this.graph.reset(initialState);
+    const entry = this.ledger.append('chaos_reset', { timestamp: new Date().toISOString() });
+    this.broadcast({ type: 'chaos_update', payload: this.chaosState, timestamp: new Date().toISOString() });
+    this.broadcast({ type: 'ledger_entry', payload: entry, timestamp: new Date().toISOString() });
+    this.broadcastState();
   }
 
   /** REST-safe command entry points; the WebSocket protocol uses the same logic. */
