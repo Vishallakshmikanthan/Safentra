@@ -476,7 +476,12 @@ function createDefaultPlantState(): Partial<PlantState> {
     workers: Object.fromEntries(workers.map(w => [w.id, w])),
     permits: Object.fromEntries(permits.map(p => [p.id, p])),
     riskEvents: [],
-    alerts: [],
+    alerts: [
+      { id: 'A1', timestamp: new Date(Date.now() - 5000).toISOString(), zoneId: 'C4', message: 'H2S concentration exceeded 15ppm threshold. Evacuation protocol standby.', severity: 'critical' },
+      { id: 'A2', timestamp: new Date(Date.now() - 120000).toISOString(), zoneId: 'C2', message: 'Shift changeover initiated. 45 workers logging out.', severity: 'info' },
+      { id: 'A3', timestamp: new Date(Date.now() - 3600000).toISOString(), zoneId: 'C1', message: 'Hot work permit #WP-102 activated near active flowline.', severity: 'warning' },
+      { id: 'A4', timestamp: new Date(Date.now() - 7200000).toISOString(), zoneId: 'SYS', message: 'Routine diagnostic complete. All primary nodes nominal.', severity: 'info' }
+    ],
     shiftChangeover: false
   };
 }

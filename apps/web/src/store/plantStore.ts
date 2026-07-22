@@ -312,6 +312,10 @@ export function connectPlantFeed(): () => void {
           store.getState().addAlert(alert);
         }
 
+        if (message.type === 'alert' && message.payload) {
+          store.getState().addAlert(message.payload);
+        }
+
         if (message.type === 'oracle_update' && message.payload) {
           store.getState().setOracleState(message.payload);
         }
