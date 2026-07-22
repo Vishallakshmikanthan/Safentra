@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { BlazeResponse, PlantState, RiskEvent, WebSocketMessage } from '@safentra/types';
 import { PlantGraph } from '../graph/PlantGraph';
 import { HashChain } from '../ledger/HashChain';
+import { completeWithNemotron, isNemotronConfigured } from './nemotronClient';
 
 export class BlazeAgent {
   private triggeredThisSession = false;
@@ -12,12 +13,12 @@ export class BlazeAgent {
     this.triggeredThisSession = false;
   }
 
-  trigger(riskEvent: RiskEvent, broadcast: (message: WebSocketMessage) => void): BlazeResponse | null {
+  async trigger(riskEvent: RiskEvent, broadcast: (message: WebSocketMessage) => void): Promise<BlazeResponse | null> {
     if (this.triggeredThisSession) return null;
     this.triggeredThisSession = true;
 
     const plantState = this.graph.getState();
-    const response = this.buildResponse(riskEvent, plantState);
+    const response = await this.buildResponse(riskEvent, plantState);
     const entry = this.ledger.append('blaze_triggered', response);
 
     broadcast({ type: 'blaze_triggered', payload: response, timestamp: new Date().toISOString() });
@@ -27,7 +28,7 @@ export class BlazeAgent {
     return response;
   }
 
-  private buildResponse(riskEvent: RiskEvent, plantState: PlantState): BlazeResponse {
+  private async buildResponse(riskEvent: RiskEvent, plantState: PlantState): Promise<BlazeResponse> {
     const capturedAt = new Date().toISOString();
     const zoneIds = [riskEvent.zoneId, ...((plantState.zones[riskEvent.zoneId]?.adjacentZones) ?? [])].slice(0, 3);
     const workers = Object.values(plantState.workers);
@@ -65,6 +66,8 @@ export class BlazeAgent {
       .map(sensor => `${sensor.sensorId} ${sensor.value}${sensor.unit} (${sensor.status})`)
       .join(', ') || 'no sensors in trigger zone';
     const exposedWorkers = evidenceSnapshot.workersPresent.filter(worker => zoneIds.includes(worker.zone));
+
+    const incidentReport = await this.generateIncidentReport(riskEvent, capturedAt, primarySensors, exposedWorkers.length);
 
     return {
       incidentId: randomUUID(),
@@ -105,17 +108,7 @@ export class BlazeAgent {
           contactMethod: 'Emergency line'
         }
       ],
-      incidentReport: [
-        'PRELIMINARY INCIDENT REPORT',
-        `Date/Time: ${new Date(capturedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
-        `Location: Coke Oven Battery Complex, Zone ${riskEvent.zoneId}, Visakhapatnam`,
-        `Nature: Compound hazard detected by ARGUS (${riskEvent.patternDescription})`,
-        `Personnel at Risk: ${exposedWorkers.length} worker(s) in trigger or adjacent zones`,
-        `Sensor Evidence: ${primarySensors}`,
-        `Contributing Factors: ${riskEvent.contributingFactors.join('; ')}`,
-        'Regulatory References: OISD-GDN-169 Clause 4.3; OISD-STD-105 Clause 6.2; Factories Act 1948 Section 41G',
-        'Status: Emergency response active. DGFASLI notification package prepared.'
-      ].join('\n'),
+      incidentReport,
       immediateActions: [
         `1. Announce emergency evacuation for Zone ${riskEvent.zoneId}`,
         '2. Suspend hot work and confined-space permits in affected zones',
@@ -127,6 +120,43 @@ export class BlazeAgent {
       ],
       evidenceSnapshot
     };
+  }
+
+  /** Real Nemotron-generated DGFASLI-style report when configured; deterministic
+   * template fallback otherwise. Never throws. */
+  private async generateIncidentReport(
+    riskEvent: RiskEvent,
+    capturedAt: string,
+    primarySensors: string,
+    exposedWorkerCount: number
+  ): Promise<string> {
+    if (isNemotronConfigured()) {
+      const llmReport = await completeWithNemotron({
+        system: `You are BLAZE, the emergency-orchestration agent for Safentra, an industrial safety platform. Generate a preliminary DGFASLI-format incident report for a confirmed compound-risk event. Be factual, terse, and operational — this is read by a plant manager during an active emergency. Use the exact structure: Date/Time, Location, Nature, Personnel at Risk, Sensor Evidence, Contributing Factors, Regulatory References, Status. Do not add commentary outside this structure.`,
+        user: `Event: ${riskEvent.patternMatched}
+Time: ${new Date(capturedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+Zone: ${riskEvent.zoneId}
+Risk score: ${(riskEvent.riskScore * 100).toFixed(0)}%
+Sensor evidence: ${primarySensors}
+Contributing factors: ${riskEvent.contributingFactors.join('; ')}
+Workers at risk: ${exposedWorkerCount}`,
+        maxTokens: 400,
+        temperature: 0.2
+      });
+      if (llmReport) return llmReport;
+    }
+
+    return [
+      'PRELIMINARY INCIDENT REPORT',
+      `Date/Time: ${new Date(capturedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
+      `Location: Coke Oven Battery Complex, Zone ${riskEvent.zoneId}, Visakhapatnam`,
+      `Nature: Compound hazard detected by ARGUS (${riskEvent.patternDescription})`,
+      `Personnel at Risk: ${exposedWorkerCount} worker(s) in trigger or adjacent zones`,
+      `Sensor Evidence: ${primarySensors}`,
+      `Contributing Factors: ${riskEvent.contributingFactors.join('; ')}`,
+      'Regulatory References: OISD-GDN-169 Clause 4.3; OISD-STD-105 Clause 6.2; Factories Act 1948 Section 41G',
+      'Status: Emergency response active. DGFASLI notification package prepared.'
+    ].join('\n');
   }
 
   private toPanelState(response: BlazeResponse) {

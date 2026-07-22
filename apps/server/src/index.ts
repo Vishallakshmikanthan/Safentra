@@ -250,15 +250,31 @@ app.get('/api/agents', (req, res) => {
 app.post('/api/oracle/query', async (req, res) => {
   const question = req.body?.question;
   if (typeof question !== 'string' || question.trim().length < 5 || question.length > 2000) return res.status(400).json({ error: 'question must be 5–2000 characters' });
-  const elevated = graph.getElevatedSensors().map(sensor => `${sensor.id} (${sensor.currentValue}${sensor.unit})`);
-  res.json({ answer: `Operational guidance: assess the affected zone, verify permits, and follow the approved emergency procedure. Current elevated readings: ${elevated.join(', ') || 'none'}.`, sources: ['OISD-GDN-169', 'OISD-STD-105'], confidence: elevated.length ? 0.82 : 0.65, relatedPatterns: wsServer.getPatternMatcher().evaluateAll().filter(p => p.matched).map(p => p.patternId) });
+  const response = await wsServer.queryOracle(question, false);
+  res.json(response);
 });
 
-app.post('/api/forge/submit', (req, res) => {
+app.post('/api/forge/submit', async (req, res) => {
   const { description, zoneId, severity = 'near_miss', tags = [] } = req.body;
   if (typeof description !== 'string' || description.trim().length < 20 || description.length > 5000 || !graph.getZone(zoneId) || !['near_miss', 'unsafe_condition', 'unsafe_act'].includes(severity) || !Array.isArray(tags)) return res.status(400).json({ error: 'Invalid near-miss submission' });
-  const terms = ['gas', 'confined', 'hot work', 'shift', 'oxygen'].filter(term => description.toLowerCase().includes(term));
-  res.status(201).json({ id: uuidv4(), status: 'candidate', confidence: Math.min(0.95, 0.45 + terms.length * 0.1), suggestedConditions: terms, sourceZoneId: zoneId });
+  const candidate = await wsServer.submitForge({ description, zoneId, severity, tags });
+  res.status(201).json(candidate);
+});
+
+app.get('/api/forge/candidates', (_req, res) => {
+  res.json(wsServer.getForgeCandidates());
+});
+
+app.post('/api/forge/candidates/:id/approve', (req, res) => {
+  const candidate = wsServer.approveForgeCandidate(req.params.id);
+  if (!candidate) return res.status(404).json({ error: 'Candidate not found' });
+  res.json(candidate);
+});
+
+app.post('/api/forge/candidates/:id/reject', (req, res) => {
+  const candidate = wsServer.rejectForgeCandidate(req.params.id);
+  if (!candidate) return res.status(404).json({ error: 'Candidate not found' });
+  res.json(candidate);
 });
 
 app.post('/api/checkpoint/scan', (req, res) => {

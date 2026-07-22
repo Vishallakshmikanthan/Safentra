@@ -387,7 +387,7 @@ export class PlantWebSocketServer {
 
   private async handleOracleQuery(clientId: string, payload: { question: string; context?: any }): Promise<void> {
     this.updateAgentStatus('ORACLE', 'running');
-    const response = this.oracle.query(payload.question, false);
+    const response = await this.oracle.query(payload.question, false, message => this.broadcast(message));
     this.updateAgentStatus('ORACLE', 'idle', response);
     
     this.sendToClient(clientId, {
@@ -410,13 +410,17 @@ export class PlantWebSocketServer {
 
   private handleForgeSubmission(payload: any): void {
     this.updateAgentStatus('FORGE', 'running');
-    const candidate = this.forge.submit({
+    this.forge.submit({
       description: String(payload.description ?? ''),
       zoneId: String(payload.zoneId ?? ''),
       severity: (payload.severity ?? 'near_miss') as ForgeSubmission['severity'],
       tags: Array.isArray(payload.tags) ? payload.tags.map(String) : []
-    }, message => this.broadcast(message));
-    this.updateAgentStatus('FORGE', 'idle', candidate);
+    }, message => this.broadcast(message))
+      .then(candidate => this.updateAgentStatus('FORGE', 'idle', candidate))
+      .catch(err => {
+        console.error('FORGE submission failed:', err);
+        this.updateAgentStatus('FORGE', 'idle');
+      });
   }
 
   private handleCheckpointScan(clientId: string, payload: any): void {
@@ -546,15 +550,25 @@ export class PlantWebSocketServer {
     if (!this.autoOracleQueried) {
       this.autoOracleQueried = true;
       this.updateAgentStatus('ORACLE', 'running');
-      const response = this.oracle.autoQuery(message => this.broadcast(message));
-      this.updateAgentStatus('ORACLE', 'idle', response);
+      // Fire-and-forget: tick() is synchronous and runs on a 500ms interval, so we
+      // don't block the loop on the LLM call — the response broadcasts itself when ready.
+      this.oracle.autoQuery(message => this.broadcast(message))
+        .then(response => this.updateAgentStatus('ORACLE', 'idle', response))
+        .catch(err => {
+          console.error('ORACLE auto-query failed:', err);
+          this.updateAgentStatus('ORACLE', 'idle');
+        });
     }
 
     if (!this.autoBlazeFired && count >= 3 && riskEvent) {
       this.autoBlazeFired = true;
       this.updateAgentStatus('BLAZE', 'running');
-      const response = this.blaze.trigger(riskEvent, message => this.broadcast(message));
-      this.updateAgentStatus('BLAZE', 'idle', response);
+      this.blaze.trigger(riskEvent, message => this.broadcast(message))
+        .then(response => this.updateAgentStatus('BLAZE', 'idle', response))
+        .catch(err => {
+          console.error('BLAZE trigger failed:', err);
+          this.updateAgentStatus('BLAZE', 'idle');
+        });
     }
   }
 
@@ -655,16 +669,16 @@ export class PlantWebSocketServer {
     this.broadcast({ type: 'oracle_update', payload: { isActive: false }, timestamp: new Date().toISOString() });
   }
 
-  queryOracle(question: string, autoQueried = false) {
+  async queryOracle(question: string, autoQueried = false) {
     this.updateAgentStatus('ORACLE', 'running');
-    const response = this.oracle.query(question, autoQueried, message => this.broadcast(message));
+    const response = await this.oracle.query(question, autoQueried, message => this.broadcast(message));
     this.updateAgentStatus('ORACLE', 'idle', response);
     return response;
   }
 
-  submitForge(payload: { description: string; zoneId: string; severity: ForgeSubmission['severity']; tags: string[] }) {
+  async submitForge(payload: { description: string; zoneId: string; severity: ForgeSubmission['severity']; tags: string[] }) {
     this.updateAgentStatus('FORGE', 'running');
-    const candidate = this.forge.submit(payload, message => this.broadcast(message));
+    const candidate = await this.forge.submit(payload, message => this.broadcast(message));
     this.updateAgentStatus('FORGE', 'idle', candidate);
     return candidate;
   }
